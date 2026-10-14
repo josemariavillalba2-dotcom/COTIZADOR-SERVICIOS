@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cotizador de paquetes de servicio · Agroterra</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#00347C; --navy-2:#002456; --yellow:#FDB913;
+  --bg:#EEF1F5; --surface:#FFFFFF; --surface-2:#F6F8FB; --ink:#0F1B2D; --muted:#4E5D73; --line:#D5DCE6;
+  --ok:#1C6B3A; --ok-bg:#E3F2E8; --warn:#8A5100; --warn-bg:#FFF1D6; --bad:#A3231B; --bad-bg:#FBE4E2;
+  --accent-ink:#00347C; --tab-ink:#FFFFFF; --focus:#FDB913;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1626; --surface:#13213A; --surface-2:#182A47; --ink:#E8EEF7; --muted:#A7B4C8; --line:#2A3D5E;
+    --ok:#7FD69C; --ok-bg:#183A27; --warn:#FFC766; --warn-bg:#3D2D0E; --bad:#FF9C93; --bad-bg:#4A1C19;
+    --accent-ink:#8FB6F0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1626; --surface:#13213A; --surface-2:#182A47; --ink:#E8EEF7; --muted:#A7B4C8; --line:#2A3D5E;
+  --ok:#7FD69C; --ok-bg:#183A27; --warn:#FFC766; --warn-bg:#3D2D0E; --bad:#FF9C93; --bad-bg:#4A1C19;
+  --accent-ink:#8FB6F0; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Barlow','Helvetica Neue',Helvetica,sans-serif;font-size:16px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.num{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-variant-numeric:tabular-nums}
+header.top{background:var(--navy);color:#fff;padding:14px clamp(14px,4vw,32px) 0}
+.brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(24px,4vw,32px);letter-spacing:.2px}
+.brand .sub{color:#C9D7EE;font-size:14px}
+nav.tabs{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+nav.tabs button{background:transparent;border:0;color:#C9D7EE;padding:10px 16px;font-weight:600;border-bottom:4px solid transparent;cursor:pointer;min-height:44px;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--yellow)}
+main{max-width:1240px;margin:0 auto;padding:20px clamp(12px,3vw,28px) 48px}
+.status{padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:15px}
+.status.info{background:var(--surface);border:1px solid var(--line)}
+.status.err{background:var(--bad-bg);color:var(--bad)}
+.status.okk{background:var(--ok-bg);color:var(--ok)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px}
+.chip{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;cursor:pointer;min-height:44px;font-weight:600;font-size:15px}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-left:6px;vertical-align:middle}
+.tickets{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:22px}
+.ticket{position:relative;text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:4px;padding:14px 16px 14px 22px;cursor:pointer;min-height:44px;display:flex;flex-direction:column;gap:2px}
+.ticket::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--line);border-radius:3px 0 0 3px}
+.ticket[aria-pressed="true"]{border-color:var(--navy);box-shadow:0 0 0 2px var(--navy) inset}
+.ticket[aria-pressed="true"]::before{background:var(--yellow)}
+.ticket .hrs{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:var(--muted)}
+.ticket .price{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:40px;line-height:1.05;color:var(--accent-ink)}
+.ticket .price small{font-size:18px;font-weight:600;color:var(--muted)}
+.ticket .meta{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.b-ok{background:var(--ok-bg);color:var(--ok)}
+.b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-bad{background:var(--bad-bg);color:var(--bad)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px clamp(12px,2.5vw,24px);margin-bottom:20px}
+.panel h2{margin:0 0 4px;font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700}
+.panel h3{margin:0 0 10px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700}
+.panel p.lead{margin:0 0 14px;color:var(--muted)}
+.detail-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:14px}
+.bigprice{text-align:right}
+.bigprice .v{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(44px,7vw,64px);line-height:1;color:var(--accent-ink)}
+.bigprice .l{color:var(--muted);font-size:14px}
+.breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0 18px}
+.kv{background:var(--surface-2);border-radius:4px;padding:10px 12px}
+.kv .k{font-size:13px;color:var(--muted)}
+.kv .v{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:8px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+tr.off td{opacity:.45}
+tr.off td:first-child{opacity:1}
+input[type=number],input[type=text],input[type=date],select{background:var(--surface);border:1.5px solid var(--line);border-radius:4px;padding:8px 10px;min-height:40px}
+input.q{width:72px;text-align:right}
+input.w{width:100%}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+label.fld span.h{font-weight:400;color:var(--muted);font-size:13px}
+.btn{border:0;border-radius:4px;padding:10px 18px;font-weight:700;cursor:pointer;min-height:44px}
+.btn.pri{background:var(--navy);color:#fff}
+.btn.yel{background:var(--yellow);color:#00244F}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon-btn{background:transparent;border:0;cursor:pointer;min-width:40px;min-height:40px;color:var(--muted);border-radius:4px}
+.icon-btn:hover{color:var(--bad)}
+.savebar{position:sticky;bottom:0;background:var(--yellow);color:#00244F;padding:12px clamp(12px,3vw,20px);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-radius:6px 6px 0 0;margin-top:16px;font-weight:600}
+.sim{background:var(--surface-2);border-radius:6px;padding:16px clamp(12px,2vw,20px);margin:6px 0 18px}
+.sim-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.sim-head h3{margin:0}
+.knob{display:grid;grid-template-columns:minmax(150px,190px) minmax(140px,1fr) 90px minmax(180px,auto);gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.knob label{font-weight:600}
+.knob output{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--accent-ink);text-align:right}
+.knob input[type=range]{width:100%;accent-color:var(--navy);min-height:32px}
+.mbar{position:relative;height:10px;background:var(--line);border-radius:5px;margin:16px 0 4px;overflow:visible}
+.mbar .fill{height:100%;background:var(--ok);border-radius:5px;width:0}
+.mbar .fill.low{background:var(--bad)}
+.mbar .min{position:absolute;top:-4px;width:2px;height:18px;background:var(--ink)}
+@media (max-width:640px){.knob{grid-template-columns:1fr 80px}.knob input[type=range]{grid-column:1/-1;grid-row:2}.knob span.small{grid-column:1/-1}}
+.seg{display:inline-flex;border:1.5px solid var(--navy);border-radius:6px;overflow:hidden;margin-bottom:18px}
+.seg button{background:var(--surface);border:0;padding:10px 18px;font-weight:700;cursor:pointer;min-height:44px;color:var(--accent-ink)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.cyc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:8px 0 16px}
+.cyc-item{display:flex;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:4px;padding:10px 12px;min-height:44px}
+.cyc-item.on{border-color:var(--navy)}
+.cyc-item .t{font-weight:700}
+dialog{border:0;border-radius:8px;padding:0;max-width:760px;width:calc(100% - 24px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,20,50,.55)}
+.dlg-h{background:var(--navy);color:#fff;padding:16px 20px}
+.dlg-h h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:26px}
+.dlg-b{padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-height:65vh;overflow-y:auto}
+.dlg-b .full{grid-column:1/-1}
+.dlg-f{padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line)}
+textarea{background:var(--surface);border:1.5px solid var(--line);border-radius:4px;padding:8px 10px;font:inherit;color:inherit;min-height:70px;width:100%}
+.dlg-b input[type=text],.dlg-b input[type=number],.dlg-b select{width:100%}
+body.ro .savebar,body.ro #add-btn,body.ro .del,body.ro #k-all{display:none !important}
+.hdr-link{background:transparent;border:0;color:#C9D7EE;text-decoration:underline;cursor:pointer;font-size:14px;min-height:32px}
+.matrix td.cell{text-align:right;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600}
+.matrix td.cell:hover{background:var(--surface-2)}
+.matrix td.lowm{color:var(--bad)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.drop{border:2px dashed var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.muted{color:var(--muted)}
+.small{font-size:13.5px}
+.hidden{display:none !important}
+.up{color:var(--bad)} .down{color:var(--ok)}
+@media (max-width:640px){
+  .bigprice{text-align:left}
+  td,th{padding:6px 5px}
+  .hide-sm{display:none}
+}
+@media (prefers-reduced-motion:no-preference){ .ticket{transition:border-color .15s} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Paquetes de servicio a precio cerrado</h1>
+    <div class="sub">Agroterra · Posventa New Holland · <span id="who"></span> <button class="hdr-link" id="logout">Cambiar clave</button></div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button role="tab" id="t-paq" aria-selected="true" aria-controls="v-paq">Paquetes</button>
+    <button role="tab" id="t-his" aria-selected="false" aria-controls="v-his">Historial</button>
+    <button role="tab" id="t-pre" aria-selected="false" aria-controls="v-pre">Actualizar precios</button>
+    <button role="tab" id="t-aju" aria-selected="false" aria-controls="v-aju">Parámetros</button>
+  </nav>
+</header>
+<main>
+  <div id="status" class="status info" role="status">Cargando datos…</div>
+  <div id="setup" class="panel hidden">
+    <h2>Conectar el cotizador</h2>
+    <p class="lead">Ingresá la clave que te pasaron. Se guarda en este navegador para la próxima vez.</p>
+    <div class="row" style="align-items:flex-end">
+      <label class="fld" id="setup-url-wrap" style="flex:1 1 360px">Dirección del servidor (la URL de Apps Script que termina en /exec)<input type="text" id="setup-url" class="w"></label>
+      <label class="fld">Clave<input type="password" id="setup-key" autocomplete="current-password"></label>
+      <button class="btn pri" id="setup-ok">Entrar</button>
+    </div>
+    <p class="small" id="setup-msg" style="margin-top:10px"></p>
+  </div>
+
+  <section id="v-paq" role="tabpanel" aria-labelledby="t-paq">
+    <div class="chips" id="chips" aria-label="Línea de máquina"></div>
+    <div class="seg" role="group" aria-label="Tipo de cotización"><button id="m-svc" aria-pressed="true">Un servicio</button><button id="m-cyc" aria-pressed="false">Ciclo completo</button></div>
+    <div class="tickets" id="tickets"></div>
+    <div id="detail"></div>
+    <div id="cycle" class="hidden"></div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <div><h3 style="margin:0">Todas las líneas</h3><div class="muted small">Precio del paquete en USD sin IVA. En rojo, margen por debajo del mínimo. Tocá un valor para abrirlo.</div></div>
+        <button class="btn ghost" id="btn-csv">Descargar CSV</button>
+      </div>
+      <div class="scroll"><table class="matrix" id="matrix"></table></div>
+    </div>
+  </section>
+
+  <section id="v-his" role="tabpanel" aria-labelledby="t-his" class="hidden">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <div><h2 style="margin:0">Historial de cotizaciones</h2><div class="muted small">Cada cotización que descargás queda registrada acá. Podés volver a bajar el PDF y marcar cómo terminó.</div></div>
+        <div class="row"><input type="text" id="his-q" placeholder="Buscar cliente, unidad o número" aria-label="Buscar en el historial" style="min-width:240px"><button class="btn ghost" id="his-csv">Descargar CSV</button></div>
+      </div>
+      <div class="scroll"><table id="his"></table></div>
+    </div>
+  </section>
+
+  <section id="v-pre" role="tabpanel" aria-labelledby="t-pre" class="hidden">
+    <div class="grid2">
+      <div class="panel">
+        <h2>Lista CNH</h2>
+        <p class="lead" id="nh-meta"></p>
+        <div class="drop">
+          <label class="fld">Archivo Excel de la lista de precios NH (como llega de CNH)
+            <input type="file" id="f-nh" accept=".xlsx,.xls,.xlsm,.csv">
+          </label>
+          <span class="small muted">El archivo es pesado: en la PC tarda entre 20 y 60 segundos. Desde el celular puede no alcanzar la memoria.</span>
+        </div>
+        <div id="nh-result"></div>
+      </div>
+      <div class="panel">
+        <h2>Listas Petronas</h2>
+        <p class="lead" id="oil-meta"></p>
+        <div class="drop">
+          <label class="fld">PDF de Petronas (podés elegir la lista NH y la FleetPro juntas)
+            <input type="file" id="f-oil" accept=".pdf" multiple>
+          </label>
+          <span class="small muted">Se usa el precio sugerido como venta y el precio de compra como costo.</span>
+        </div>
+        <div id="oil-result"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Códigos para revisar</h3>
+      <p class="lead small">Repuestos de los paquetes que no están limpios en la última lista CNH.</p>
+      <div class="scroll"><table id="review"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Aceites cargados</h3>
+      <p class="lead small">Podés corregir un precio a mano. Los valores están en pesos, sin IVA.</p>
+      <div class="scroll"><table id="oiltable"></table></div>
+      <div class="row" style="margin-top:12px"><button class="btn pri hidden" id="btn-oil-save">Guardar precios de aceites</button></div>
+    </div>
+  </section>
+
+  <section id="v-aju" role="tabpanel" aria-labelledby="t-aju" class="hidden">
+    <div class="panel">
+      <h2>Parámetros</h2>
+      <p class="lead">Se aplican a todos los paquetes. Los montos están en dólares salvo el tipo de cambio.</p>
+      <div class="params" id="params"></div>
+      <div class="row" style="margin-top:18px"><button class="btn pri" id="btn-params">Guardar parámetros</button></div>
+    </div>
+    <div class="panel">
+      <h3>Respaldo</h3>
+      <p class="lead small">Bajá una copia de todos los datos (paquetes, precios, parámetros e historial) o cargá una copia en la planilla. La primera vez, importá el archivo de datos iniciales.</p>
+      <div class="row"><button class="btn ghost" id="bk-exp">Descargar respaldo</button><label class="btn ghost" style="display:inline-flex;align-items:center">Importar respaldo<input type="file" id="bk-imp" accept=".json" class="hidden"></label></div>
+      <p class="small" id="bk-msg"></p>
+    </div>
+  </section>
+</main>
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <form method="dialog" id="qform">
+    <div class="dlg-h"><h2 id="dlg-title">Cotizar a un cliente</h2><div class="small" id="dlg-sub" style="color:#C9D7EE"></div></div>
+    <div class="dlg-b">
+      <label class="fld full">Cliente (razón social)<input type="text" name="cliente" required autocomplete="off" list="dl-clientes"></label>
+      <label class="fld">CUIT<input type="text" name="cuit" autocomplete="off"></label>
+      <label class="fld">Localidad<input type="text" name="localidad" autocomplete="off"></label>
+      <label class="fld">Contacto<input type="text" name="contacto" autocomplete="off"></label>
+      <label class="fld">Teléfono<input type="text" name="tel" autocomplete="off"></label>
+      <label class="fld">Modelo de la unidad<input type="text" name="modelo" autocomplete="off"></label>
+      <label class="fld">N° de serie<input type="text" name="serie" autocomplete="off"></label>
+      <label class="fld">Horas actuales<input type="number" name="horas" min="0" step="1"></label>
+      <label class="fld">Validez (días)<input type="number" name="validez" min="1" step="1" value="15"></label>
+      <label class="fld full">Forma de pago<input type="text" name="pago" list="dl-pago" autocomplete="off"></label>
+      <label class="fld full">Viáticos<input type="text" name="viaticos" value="Se cotizan aparte según la distancia."></label>
+      <label class="fld full">Observaciones<textarea name="obs"></textarea></label>
+      <label class="fld">Cotizó<input type="text" name="vendedor" required autocomplete="off"></label>
+      <label class="fld" style="flex-direction:row;align-items:center;gap:8px;align-self:end"><input type="checkbox" name="detalle" checked> Incluir el detalle de repuestos y aceites</label>
+    </div>
+    <div class="dlg-f"><span class="small muted" id="dlg-msg" style="margin-right:auto;align-self:center"></span><button type="button" class="btn ghost" id="dlg-cancel">Cancelar</button><button type="submit" class="btn pri" id="dlg-ok">Registrar y descargar PDF</button></div>
+  </form>
+  <datalist id="dl-pago"><option value="Contado"><option value="Cuenta corriente a 30 días"><option value="Cheques a 30, 60 y 90 días"><option value="Tarjeta agro"><option value="A convenir"><option value="Plan completo: pago por adelantado"><option value="Plan completo: se paga cada servicio al realizarlo"></datalist>
+  <datalist id="dl-clientes"></datalist>
+</dialog>
+
+<script>
+(function(){
+"use strict";
+const XLSX_URL="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+const PDF_URL="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+const PDFW_URL="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const OIL_RE=/^[0-9A-Z]{6,12}AR$/;
+const PARAM_DEF=[
+  ["tc","Tipo de cambio ($ por USD)","Pasa los aceites de pesos a dólares y el paquete a pesos.",1],
+  ["hora","Precio hora de mano de obra (USD)","Lo que se cobra al cliente por hora.",0.01],
+  ["costoHora","Costo hora técnico (USD)","Para calcular el margen.",0.01],
+  ["dtoRep","Descuento general en repuestos CNH (%)","Valor de arranque de cada paquete.",0.01,true],
+  ["dtoOil","Descuento general en aceites (%)","Valor de arranque de cada paquete.",0.01,true],
+  ["dtoMO","Descuento general en mano de obra (%)","Sobre la hora de lista; valor de arranque.",0.01,true],
+  ["maxRep","Tope de descuento repuestos CNH (%)","No se puede pasar en ningún paquete.",0.01,true],
+  ["maxOil","Tope de descuento aceites (%)","No se puede pasar en ningún paquete.",0.01,true],
+  ["minHora","Hora de MO mínima (USD)","Piso de la hora en los paquetes.",1],
+  ["dtoCNH","Descuento de compra CNH (%)","Costo del repuesto = lista menos este %.",0.01,true],
+  ["agua","Agua desmineralizada x 5 L (USD)","Precio fijo, no viene en ninguna lista.",0.01],
+  ["redondeo","Redondear el precio a múltiplos de (USD)","El paquete se redondea hacia arriba.",1],
+  ["margenMin","Margen mínimo aceptable (%)","Por debajo se marca en rojo.",0.01,true],
+  ["iva","IVA (%)","",0.01,true]
+];
+const S={db:null,dl:null,params:{},meta:{},pk:{},nh:new Map(),oil:new Map(),line:null,h:null,dirty:new Set(),nhDirty:false,oilDirty:false,fullNH:null,draftNH:null,oilStage:new Map(),oilLists:[],lastPk:{},mode:"svc",quotes:[],user:null,me:null,pending:null};
+const JSPDF_URL="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",AUTOTABLE_URL="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=(n,d=0)=>(n==null||isNaN(n))?"–":Number(n).toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=n=>(n==null||isNaN(n))?"–":(n*100).toLocaleString("es-AR",{maximumFractionDigits:1})+"%";
+const lineName=n=>String(n).replace(/^LINEA\s*/i,"").replace(/\.\s+/g,".").trim();
+function setStatus(msg,kind){const el=$("#status");if(!msg){el.classList.add("hidden");return}el.className="status "+(kind||"info");el.textContent=msg}
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector('script[src="'+src+'"]'))return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("No se pudo cargar "+src));document.head.appendChild(s)})}
+const tick=()=>new Promise(r=>setTimeout(r,60));
+
+/* ---------- tabs ---------- */
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));
+  ["v-paq","v-his","v-pre","v-aju"].forEach(id=>$("#"+id).classList.toggle("hidden",id!==b.getAttribute("aria-controls")));
+}));
+
+/* ---------- pricing ---------- */
+function itemPrice(it){
+  const p=S.params,tc=p.tc||1;
+  if(it.t==="NH"){const e=S.nh.get(it.c);if(!e||e.p==null)return{u:null,c:null,st:"missing"};return{u:e.p,c:e.p*(1-p.dtoCNH),st:e.s||"ok",e}}
+  if(it.t==="OIL"){const o=S.oil.get(it.c);if(!o||!o.sug)return{u:null,c:null,st:"missing"};const c=o.compra?o.compra/tc:(o.sug/tc)*0.8;return{u:o.sug/tc,c,st:o.s||"ok",e:o}}
+  if(it.t==="AGUA")return{u:p.agua,c:p.agua*(1-p.dtoCNH),st:"ok"};
+  if(it.t==="MAN")return{u:it.p,c:it.p*(1-p.dtoCNH),st:"manual"};
+  return{u:null,c:null,st:"missing"};
+}
+function knobs(svc){const p=S.params;
+  const dR=Math.min(Math.max(svc.dR??p.dtoRep,0),p.maxRep),dO=Math.min(Math.max(svc.dO??p.dtoOil,0),p.maxOil);
+  const hMO=Math.max(svc.hMO??p.hora*(1-p.dtoMO),p.minHora);
+  return{dR,dO,hMO,custom:svc.dR!=null||svc.dO!=null||svc.hMO!=null}}
+function calc(slug,h,ko){
+  const svc=S.pk[slug].services[h],p=S.params,k=knobs(ko||svc);let rep=0,oil=0,cost=0,alerts=0;
+  const rows=svc.items.map(it=>{const r=itemPrice(it);const on=it.on!==false;
+    const tot=r.u==null?0:r.u*it.q;if(on){if(it.t==="OIL")oil+=tot;else rep+=tot;cost+=(r.c||0)*it.q;if(r.st!=="ok"&&r.st!=="manual")alerts++}
+    return{it,on,...r,tot}});
+  const hrs=svc.mo||0,mat=rep+oil,moLista=hrs*p.hora,mo=hrs*k.hMO,lista=mat+moLista;
+  const conDto=rep*(1-k.dR)+oil*(1-k.dO)+mo;
+  const red=p.redondeo>0?Math.ceil(conDto/p.redondeo-1e-9)*p.redondeo:conDto;
+  const costo=cost+hrs*p.costoHora;
+  const gan=red-costo,margen=red?gan/red:0;
+  return{rows,rep,oil,mat,mo,moLista,hrs,lista,conDto,red,dto:lista-red,iva:red*(1+p.iva),ars:red*(1+p.iva)*p.tc,costo,gan,margen,alerts,k};
+}
+const hoursOf=slug=>Object.keys(S.pk[slug].services).sort((a,b)=>a-b);
+const linesSorted=()=>Object.keys(S.pk).sort((a,b)=>(S.pk[a].order??99)-(S.pk[b].order??99));
+function stBadge(st,e){
+  if(st==="ok")return e&&e.post?'<span class="badge b-warn" title="CNH indica un código que lo reemplaza">Reemplazo: '+esc(e.post)+'</span>':'<span class="badge b-ok">Lista</span>';
+  if(st==="sub")return'<span class="badge b-warn">Sustituido por '+esc(e&&e.sc)+'</span>';
+  if(st==="stale")return'<span class="badge b-bad">No está en la lista, precio anterior</span>';
+  if(st==="manual")return'<span class="badge b-warn">Precio manual</span>';
+  return'<span class="badge b-bad">Sin precio</span>';
+}
+
+/* ---------- render: paquetes ---------- */
+function renderChips(){
+  $("#chips").innerHTML=linesSorted().map(s=>{
+    const bad=hoursOf(s).some(h=>calc(s,h).alerts>0);
+    return'<button class="chip" data-l="'+s+'" aria-pressed="'+(s===S.line)+'">'+esc(lineName(S.pk[s].name))+(bad?'<span class="dot" aria-label="con alertas"></span>':'')+(S.dirty.has(s)?' *':'')+'</button>'}).join("");
+  $("#chips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{S.line=b.dataset.l;S.h=hoursOf(S.line).includes(S.h)?S.h:hoursOf(S.line)[0];renderPaq()});
+}
+function renderTickets(){
+  const s=S.line;if(!s){$("#tickets").innerHTML="";return}
+  $("#tickets").innerHTML=hoursOf(s).map(h=>{const c=calc(s,h);const low=c.margen<S.params.margenMin;
+    return'<button class="ticket" data-h="'+h+'" aria-pressed="'+(h===S.h)+'"><span class="hrs">Servicio '+h+' h</span><span class="price num">'+fmt(c.red)+' <small>USD</small></span><span class="meta">+ IVA · '+(low?'<span class="badge b-bad">Margen '+pct(c.margen)+'</span>':'Margen '+pct(c.margen))+'</span>'+(c.alerts?'<span class="meta"><span class="badge b-warn">'+c.alerts+' para revisar</span></span>':'')+'</button>'}).join("");
+  $("#tickets").querySelectorAll(".ticket").forEach(b=>b.onclick=()=>{S.h=b.dataset.h;renderPaq()});
+}
+function renderDetail(){
+  const s=S.line,h=S.h;if(!s||!h){$("#detail").innerHTML="";return}
+  const svc=S.pk[s].services[h],c=calc(s,h),p=S.params;
+  const rows=c.rows.map((r,i)=>'<tr class="'+(r.on?'':'off')+'"><td><input type="checkbox" data-i="'+i+'" class="on" '+(r.on?'checked':'')+' aria-label="Incluir '+esc(r.it.d)+'"></td><td class="num">'+esc(r.it.c)+'</td><td>'+esc(r.it.d)+(r.it.t==="OIL"?' <span class="muted small">(aceite)</span>':'')+'</td><td class="r"><input type="number" class="q" min="0" step="0.5" data-i="'+i+'" value="'+r.it.q+'" aria-label="Cantidad"></td><td class="r num">'+(r.u==null?'–':fmt(r.u,2))+'</td><td class="r num">'+fmt(r.tot,2)+'</td><td>'+stBadge(r.st,r.e)+'</td><td><button class="icon-btn del" data-i="'+i+'" aria-label="Quitar '+esc(r.it.d)+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></td></tr>').join("");
+  $("#detail").innerHTML='<div class="panel"><div class="detail-head"><div><h2>'+esc(lineName(S.pk[s].name))+' · Servicio '+h+' h</h2><div class="muted">Lista CNH: '+esc(S.meta.nhFecha||"–")+' · Petronas: '+esc(S.meta.oilFecha||"–")+' · TC '+fmt(p.tc)+'</div></div><div class="bigprice"><div class="v num" id="big-v">USD '+fmt(c.red)+'</div><div class="l" id="big-l">precio del paquete + IVA · con IVA USD '+fmt(c.iva)+' · $ '+fmt(c.ars)+'</div></div></div>'+
+  '<div class="sim"><div class="sim-head"><h3>Descuentos de este paquete</h3><span class="muted small">Topes: repuestos CNH '+pct(p.maxRep)+' · aceites '+pct(p.maxOil)+' · hora de MO desde USD '+fmt(p.minHora)+'</span></div>'+
+  '<div class="knob"><label for="k-r">Repuestos CNH</label><input type="range" id="k-r" min="0" max="'+p.maxRep+'" step="0.005" value="'+c.k.dR+'"><output id="o-r" class="num">'+pct(c.k.dR)+'</output><span class="muted small" id="x-r">'+fmt(c.rep,2)+' a lista · − USD '+fmt(c.rep*c.k.dR,2)+'</span></div>'+
+  '<div class="knob"><label for="k-o">Aceites Petronas</label><input type="range" id="k-o" min="0" max="'+p.maxOil+'" step="0.005" value="'+c.k.dO+'"><output id="o-o" class="num">'+pct(c.k.dO)+'</output><span class="muted small" id="x-o">'+fmt(c.oil,2)+' a lista · − USD '+fmt(c.oil*c.k.dO,2)+'</span></div>'+
+  '<div class="knob"><label for="k-h">Hora de mano de obra</label><input type="range" id="k-h" min="'+p.minHora+'" max="'+Math.max(120,p.hora*2)+'" step="1" value="'+c.k.hMO+'"><output id="o-h" class="num">USD '+fmt(c.k.hMO)+'</output><span class="muted small" id="x-h">'+fmt(c.hrs,1)+' h · lista USD '+fmt(p.hora)+'/h</span></div>'+
+  '<div class="knob"><label for="mo">Horas de mano de obra</label><input type="number" id="mo" class="q" min="0" step="0.5" value="'+(svc.mo||0)+'"><span></span><span class="muted small">Tiempo que lleva el servicio</span></div>'+
+  '<div class="mbar" aria-hidden="true"><div class="fill" id="m-fill"></div><div class="min" style="left:'+Math.min(p.margenMin*100/0.5,100)+'%"></div></div><div class="small" id="m-txt" style="margin-bottom:6px"></div>'+
+  '<div class="breakdown"><div class="kv"><div class="k">Total a lista</div><div class="v num" id="v-lista">'+fmt(c.lista,2)+'</div></div><div class="kv"><div class="k">Descuento total</div><div class="v num" id="v-dto">'+fmt(c.dto,2)+'</div></div><div class="kv"><div class="k">Costo</div><div class="v num" id="v-costo">'+fmt(c.costo,2)+'</div></div><div class="kv"><div class="k">Ganancia</div><div class="v num" id="v-gan">'+fmt(c.gan,2)+'</div></div><div class="kv"><div class="k">Margen</div><div class="v num" id="v-m">'+pct(c.margen)+'</div></div></div>'+
+  '<div class="row"><button class="btn ghost" id="k-all">Usar estos descuentos en toda la línea</button>'+(c.k.custom?'<button class="btn ghost" id="k-reset">Volver a los valores generales</button>':'<span class="muted small">Usando los valores generales de Parámetros</span>')+'<button class="btn yel" id="q-svc" style="margin-left:auto">Cotizar a un cliente</button></div></div>'+
+  '<div class="scroll"><table><thead><tr><th>Incl.</th><th>Código</th><th>Descripción</th><th class="r">Cant.</th><th class="r">P. unit USD</th><th class="r">Subtotal</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  '<div class="row" style="margin-top:14px;align-items:flex-end"><label class="fld">Agregar código<input type="text" id="add-code" placeholder="Ej. 84228488" style="width:160px"></label><label class="fld">Cant.<input type="number" id="add-q" class="q" value="1" min="0" step="0.5"></label><button class="btn ghost" id="add-btn">Agregar</button></div><div id="add-extra"></div>'+
+  (S.dirty.size?'<div class="savebar"><span>Hay cambios sin guardar en '+[...S.dirty].map(x=>esc(lineName(S.pk[x].name))).join(", ")+'</span><span class="row"><button class="btn ghost" id="btn-discard">Descartar</button><button class="btn pri" id="btn-save">Guardar cambios</button></span></div>':'')+'</div>';
+  const mark=()=>{S.dirty.add(s);renderPaq(true)};
+  $("#detail").querySelectorAll("input.on").forEach(x=>x.onchange=()=>{svc.items[x.dataset.i].on=x.checked;mark()});
+  $("#detail").querySelectorAll("input.q[data-i]").forEach(x=>x.onchange=()=>{const v=parseFloat(x.value);svc.items[x.dataset.i].q=isNaN(v)?0:v;mark()});
+  $("#detail").querySelectorAll(".del").forEach(x=>x.onclick=()=>{svc.items.splice(+x.dataset.i,1);mark()});
+  $("#mo").onchange=e=>{const v=parseFloat(e.target.value);svc.mo=isNaN(v)?0:v;mark();$("#mo").focus()};
+  const live=()=>{const c2=calc(s,h);$("#o-r").textContent=pct(c2.k.dR);$("#o-o").textContent=pct(c2.k.dO);$("#o-h").textContent="USD "+fmt(c2.k.hMO);
+    $("#x-r").textContent=fmt(c2.rep,2)+" a lista · − USD "+fmt(c2.rep*c2.k.dR,2);$("#x-o").textContent=fmt(c2.oil,2)+" a lista · − USD "+fmt(c2.oil*c2.k.dO,2);
+    $("#big-v").textContent="USD "+fmt(c2.red);$("#big-l").textContent="precio del paquete + IVA · con IVA USD "+fmt(c2.iva)+" · $ "+fmt(c2.ars);
+    $("#v-lista").textContent=fmt(c2.lista,2);$("#v-dto").textContent=fmt(c2.dto,2);$("#v-costo").textContent=fmt(c2.costo,2);$("#v-gan").textContent=fmt(c2.gan,2);
+    const vm=$("#v-m");vm.textContent=pct(c2.margen);vm.classList.toggle("up",c2.margen<p.margenMin);
+    const fl=$("#m-fill");fl.style.width=Math.max(0,Math.min(c2.margen/0.5,1))*100+"%";fl.classList.toggle("low",c2.margen<p.margenMin);
+    const r2=c2.rep*(1-c2.k.dR)-c2.rows.filter(r=>r.on&&r.it.t!=="OIL").reduce((a,r)=>a+(r.c||0)*r.it.q,0),o2=c2.oil*(1-c2.k.dO)-c2.rows.filter(r=>r.on&&r.it.t==="OIL").reduce((a,r)=>a+(r.c||0)*r.it.q,0),m2=c2.mo-c2.hrs*p.costoHora;
+    $("#m-txt").innerHTML=(c2.margen<0?'<strong class="up">Pérdida: el precio no cubre el costo.</strong> ':c2.margen<p.margenMin?'<strong class="up">Ganás, pero por debajo del margen mínimo de '+pct(p.margenMin)+'.</strong> ':'<strong>Por encima del margen mínimo de '+pct(p.margenMin)+'.</strong> ')+'<span class="muted">Ganancia por rubro: repuestos USD '+fmt(r2,2)+' · aceites USD '+fmt(o2,2)+' · mano de obra USD '+fmt(m2,2)+'</span>';
+    renderTickets();renderMatrix()};
+  [["#k-r","dR"],["#k-o","dO"],["#k-h","hMO"]].forEach(([id,key])=>{const el=$(id);
+    el.oninput=()=>{svc[key]=parseFloat(el.value);S.dirty.add(s);live()};
+    el.onchange=()=>{renderPaq(true);const n=$(id);if(n)n.focus()}});
+  live();
+  $("#k-all").onclick=()=>{const k=knobs(svc);Object.values(S.pk[s].services).forEach(x=>{x.dR=k.dR;x.dO=k.dO;x.hMO=k.hMO});S.dirty.add(s);renderPaq(true);setStatus("Descuentos aplicados a todos los servicios de "+lineName(S.pk[s].name)+". Falta guardar.","info")};
+  const kr=$("#k-reset");if(kr)kr.onclick=()=>{delete svc.dR;delete svc.dO;delete svc.hMO;S.dirty.add(s);renderPaq(true)};
+  $("#q-svc").onclick=()=>openQuote("servicio");
+  $("#add-btn").onclick=()=>addItem(s,h);
+  const sv=$("#btn-save");if(sv)sv.onclick=savePackages;
+  const dc=$("#btn-discard");if(dc)dc.onclick=()=>{S.dirty.clear();loadAll().then(()=>setStatus("Cambios descartados.","info"))};
+}
+function addItem(s,h){
+  const code=$("#add-code").value.trim().toUpperCase(),q=parseFloat($("#add-q").value)||1;if(!code)return;
+  const svc=S.pk[s].services[h];let it=null;
+  if(S.oil.has(code))it={c:code,d:S.oil.get(code).d||S.oil.get(code).env||"Aceite",q,t:"OIL",on:true};
+  else if(S.nh.has(code))it={c:code,d:S.nh.get(code).d,q,t:"NH",on:true};
+  else if(S.fullNH&&S.fullNH.map.has(code)){const r=S.fullNH.map.get(code);S.nh.set(code,{c:code,d:r.d,p:r.p,s:"ok",...(r.post?{post:r.post}:{})});S.nhDirty=true;it={c:code,d:r.d,q,t:"NH",on:true}}
+  if(it){svc.items.push(it);S.dirty.add(s);renderPaq(true);return}
+  $("#add-extra").innerHTML='<div class="status info" style="margin-top:12px">El código '+esc(code)+' no está en los precios cargados. Si cargás la lista CNH completa en "Actualizar precios" lo encuentra solo. Si no, cargalo a mano:<div class="row" style="margin-top:10px;align-items:flex-end"><label class="fld">Descripción<input type="text" id="m-d"></label><label class="fld">Precio USD<input type="number" id="m-p" class="q" step="0.01"></label><button class="btn ghost" id="m-ok">Agregar a mano</button></div></div>';
+  $("#m-ok").onclick=()=>{const pr=parseFloat($("#m-p").value);if(isNaN(pr))return;svc.items.push({c:code,d:$("#m-d").value||code,q,t:"MAN",p:pr,on:true});S.dirty.add(s);renderPaq(true)};
+}
+function renderMatrix(){
+  const hs=[...new Set(linesSorted().flatMap(hoursOf))].sort((a,b)=>a-b);
+  $("#matrix").innerHTML='<thead><tr><th>Línea</th>'+hs.map(h=>'<th class="r">'+h+' h</th>').join("")+'</tr></thead><tbody>'+linesSorted().map(s=>'<tr><td>'+esc(lineName(S.pk[s].name))+'</td>'+hs.map(h=>{if(!S.pk[s].services[h])return'<td></td>';const c=calc(s,h);return'<td class="cell'+(c.margen<S.params.margenMin?' lowm':'')+'" data-l="'+s+'" data-h="'+h+'" tabindex="0">'+fmt(c.red)+(c.alerts?' <span class="badge b-warn" aria-label="'+c.alerts+' para revisar">'+c.alerts+'</span>':'')+'</td>'}).join("")+'</tr>').join("")+'</tbody>';
+  $("#matrix").querySelectorAll("td.cell").forEach(td=>{const go=()=>{S.line=td.dataset.l;S.h=td.dataset.h;renderPaq();$("#chips").scrollIntoView({behavior:"smooth"})};td.onclick=go;td.onkeydown=e=>{if(e.key==="Enter")go()}});
+}
+function renderPaq(keepScroll){
+  if(!S.line){S.line=linesSorted().find(s=>/t7/.test(s))||linesSorted()[0];if(S.line)S.h=hoursOf(S.line)[0]}
+  const y=window.scrollY,cy=S.mode==="cyc";renderChips();
+  $("#m-svc").setAttribute("aria-pressed",!cy);$("#m-cyc").setAttribute("aria-pressed",cy);
+  $("#tickets").classList.toggle("hidden",cy);$("#detail").classList.toggle("hidden",cy);$("#cycle").classList.toggle("hidden",!cy);
+  if(cy)renderCycle();else{renderTickets();renderDetail()}renderMatrix();if(keepScroll)window.scrollTo(0,y);
+}
+async function savePackages(){
+  if(!S.db)return setStatus("No hay conexión con la base: no se puede guardar.","err");
+  try{
+    for(const s of S.dirty){const d=S.pk[s];await S.db.doc("pkgs/"+s).set(JSON.parse(JSON.stringify(d)))}
+    if(S.nhDirty){await saveNH();S.nhDirty=false}
+    S.dirty.clear();renderPaq(true);setStatus("Cambios guardados.","okk");
+  }catch(e){setStatus("No se pudo guardar: "+(e.message||e.code||e)+". Sólo el dueño o editores del cotizador pueden guardar.","err")}
+}
+async function saveNH(){await S.db.doc("prices/nh").set({items:[...S.nh.values()]})}
+
+/* ---------- CNH list ---------- */
+function parseNum(v){if(typeof v==="number")return v;let s=String(v==null?"":v).trim().replace(/\s|\$|USD/gi,"");if(!s)return null;if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"");s=s.replace(",",".");const n=parseFloat(s);return isNaN(n)?null:n}
+async function readCNH(file){
+  const out=$("#nh-result");out.innerHTML='<p class="status info">Abriendo el archivo… no cierres la página.</p>';await tick();
+  await loadScript(XLSX_URL);await tick();
+  const buf=await file.arrayBuffer();
+  let names;if(/\.csv$/i.test(file.name))names=null;else names=XLSX.read(buf,{type:"array",bookSheets:true}).SheetNames;
+  const cand=names?[...names].sort((a,b)=>score(b)-score(a)):[null];
+  function score(n){n=n.toLowerCase();return(n.includes("precio")?2:0)+(/\bnh\b/.test(n)?2:0)-(/digital|licen|fleet|desbloq/.test(n)?5:0)}
+  for(const name of cand){
+    out.innerHTML='<p class="status info">Leyendo la hoja "'+esc(name||file.name)+'"… puede tardar.</p>';await tick();
+    const wb=name?XLSX.read(buf,{type:"array",sheets:[name],dense:true}):XLSX.read(new TextDecoder().decode(buf),{type:"string",dense:true});
+    const ws=wb.Sheets[name||wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,blankrows:false});
+    let hi=-1,col={};
+    for(let i=0;i<Math.min(40,rows.length);i++){const r=(rows[i]||[]).map(x=>String(x==null?"":x).toLowerCase().trim());
+      const ci=r.findIndex(x=>/part\s*n|^c[oó]digo|^partnr/.test(x)),pi=r.findIndex(x=>/precio/.test(x));
+      if(ci>=0&&pi>=0){hi=i;col={c:ci,p:pi,d:r.findIndex(x=>/descrip/.test(x)),a:r.findIndex(x=>/anterior/.test(x)),po:r.findIndex(x=>/posterior/.test(x))};break}}
+    if(hi<0)continue;
+    const map=new Map(),ant=new Map();
+    for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r||r[col.c]==null)continue;const c=String(r[col.c]).trim().toUpperCase();if(!c)continue;
+      const e={d:col.d>=0?String(r[col.d]??"").trim():"",p:parseNum(r[col.p]),post:col.po>=0&&r[col.po]!=null&&String(r[col.po]).trim()?String(r[col.po]).trim().toUpperCase():null};
+      map.set(c,e);if(col.a>=0&&r[col.a]!=null&&String(r[col.a]).trim())ant.set(String(r[col.a]).trim().toUpperCase(),c)}
+    return{map,ant,sheet:name,file:file.name};
+  }
+  throw new Error("No encontré una hoja con columnas de código y precio.");
+}
+function proposeNH(full){
+  const codes=new Set();Object.values(S.pk).forEach(l=>Object.values(l.services).forEach(sv=>sv.items.forEach(it=>{if(it.t==="NH")codes.add(it.c)})));
+  S.nh.forEach((v,k)=>codes.add(k));
+  const items=[],changes=[];
+  for(const c of codes){const old=S.nh.get(c);let e;
+    if(full.map.has(c)&&full.map.get(c).p!=null){const r=full.map.get(c);e={c,d:r.d,p:r.p,s:"ok"};if(r.post)e.post=r.post}
+    else if(full.ant.has(c)&&full.map.get(full.ant.get(c))){const n=full.ant.get(c),r=full.map.get(n);e={c,d:r.d,p:r.p,s:"sub",sc:n}}
+    else e={c,d:old?old.d:"",p:old?old.p:null,s:old&&old.p!=null?"stale":"missing"};
+    items.push(e);const op=old?old.p:null;
+    if(op!==e.p||(old&&old.s)!==e.s)changes.push({c,d:e.d,op,np:e.p,s:e.s,e})}
+  return{items,changes};
+}
+$("#f-nh").addEventListener("change",async ev=>{
+  const f=ev.target.files[0];if(!f)return;const out=$("#nh-result");
+  try{
+    const full=await readCNH(f);S.fullNH=full;const pr=proposeNH(full);S.draftNH=pr;
+    const m=f.name.match(/(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|SETIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)[_\s-]*(\d{4})/i);
+    const label=m?m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()+" "+m[2]:new Date().toLocaleDateString("es-AR");
+    const ch=pr.changes.sort((a,b)=>Math.abs(((b.np||0)-(b.op||0))/(b.op||1))-Math.abs(((a.np||0)-(a.op||0))/(a.op||1)));
+    out.innerHTML='<div class="status okk" style="margin-top:14px">Leí '+fmt(full.map.size)+' códigos. De los '+pr.items.length+' que usan los paquetes, '+pr.items.filter(x=>x.s==="ok").length+' están en lista, '+pr.items.filter(x=>x.s==="sub").length+' se reemplazaron por su sustituto y '+pr.items.filter(x=>x.s==="stale"||x.s==="missing").length+' no aparecen.</div>'+
+      (ch.length?'<div class="scroll" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>Código</th><th>Descripción</th><th class="r">Antes</th><th class="r">Ahora</th><th class="r">Var.</th><th>Estado</th></tr></thead><tbody>'+ch.map(x=>{const v=x.op&&x.np?(x.np-x.op)/x.op:null;return'<tr><td class="num">'+esc(x.c)+'</td><td>'+esc(x.d)+'</td><td class="r num">'+fmt(x.op,2)+'</td><td class="r num">'+fmt(x.np,2)+'</td><td class="r num '+(v>0?'up':v<0?'down':'')+'">'+(v==null?'–':pct(v))+'</td><td>'+stBadge(x.s,x.e)+'</td></tr>'}).join("")+'</tbody></table></div>':'<p class="muted">Ningún precio de los paquetes cambió respecto de la lista anterior.</p>')+
+      '<div class="row" style="margin-top:12px;align-items:flex-end"><label class="fld">Nombre de la lista<input type="text" id="nh-label" value="'+esc(label)+'"></label><button class="btn pri" id="nh-save">Guardar lista CNH</button></div>';
+    $("#nh-save").onclick=async()=>{
+      try{S.nh=new Map(pr.items.map(e=>[e.c,e]));await saveNH();S.meta.nhFecha=$("#nh-label").value;S.meta.nhArchivo=f.name;await S.db.doc("app/meta").set(S.meta);
+        out.innerHTML='<p class="status okk" style="margin-top:14px">Lista CNH guardada. Los paquetes ya usan los precios nuevos.</p>';renderAll()}
+      catch(e){out.insertAdjacentHTML("beforeend",'<p class="status err">No se pudo guardar: '+esc(e.message||e.code)+'</p>')}};
+  }catch(e){out.innerHTML='<p class="status err" style="margin-top:14px">'+esc(e.message||e)+'</p>'}
+  ev.target.value="";
+});
+
+/* ---------- Petronas PDFs ---------- */
+async function readPDF(file){
+  await loadScript(PDF_URL);await loadScript(PDFW_URL);
+  const lib=window.pdfjsLib||window["pdfjs-dist/build/pdf"];lib.GlobalWorkerOptions.workerSrc=PDFW_URL;
+  const pdf=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise;
+  const out=[];let text="";
+  for(let pn=1;pn<=pdf.numPages;pn++){
+    const pg=await pdf.getPage(pn),tc=await pg.getTextContent();const toks=[];
+    tc.items.forEach(it=>{const s=it.str;if(!s||!s.trim())return;text+=s+" ";const x0=it.transform[4],y=it.transform[5],w=it.width||0;let pos=0;
+      s.split(/(\s+)/).forEach(part=>{if(part.trim())toks.push({t:part.trim(),x:x0+(s.length?w*pos/s.length:0),x1:x0+(s.length?w*(pos+part.length)/s.length:0),y});pos+=part.length})});
+    const nums=toks.filter(t=>/^\d{1,3}(\.\d{3})*(,\d+)?$/.test(t.t)),envs=toks.filter(t=>/^\d+(x\d+)?[LK]\*?$/i.test(t.t));
+    toks.filter(t=>OIL_RE.test(t.t)).forEach(c=>{
+      const near=(arr,tol,right)=>arr.filter(n=>Math.abs(n.y-c.y)<tol&&(right?n.x>c.x1-1:n.x1<c.x+1)).sort((a,b)=>Math.abs(a.y-c.y)-Math.abs(b.y-c.y)||a.x-b.x);
+      let row=near(nums,6,true);if(!row.length)row=near(nums,16,true);if(!row.length)return;
+      row=row.slice(0,2).sort((a,b)=>a.x-b.x);const pv=s=>parseFloat(s.replace(/\./g,"").replace(",","."));
+      const compra=pv(row[0].t),sug=row[1]?pv(row[1].t):Math.round(compra*125)/100;const env=near(envs,16,false)[0];
+      out.push({c:c.t,compra,sug,env:env?env.t:""})})}
+  const ln=(text.match(/Lista\s*N\s*[°º]?\s*(\d+)/i)||[])[1],vig=(text.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1];
+  const name=(/fleet\s*pro/i.test(text)?"FleetPro":"Petronas NH")+(ln?" Lista "+ln:"");
+  out.forEach(o=>o.l=name);return{items:out,name,vig};
+}
+$("#f-oil").addEventListener("change",async ev=>{
+  const files=[...ev.target.files];if(!files.length)return;const out=$("#oil-result");
+  out.insertAdjacentHTML("afterbegin",'<p class="status info" id="oil-reading" style="margin-top:14px">Leyendo PDF…</p>');
+  try{
+    for(const f of files){const r=await readPDF(f);
+      if(!r.items.length)throw new Error('No encontré códigos de producto en "'+f.name+'". Revisá que sea una lista de Petronas.');
+      S.oilLists=S.oilLists.filter(x=>x.name!==r.name);S.oilLists.push({name:r.name,vig:r.vig,file:f.name,codes:r.items.map(i=>i.c)});
+      r.items.forEach(i=>S.oilStage.set(i.c,i))}
+    renderOilStage();
+  }catch(e){const rd=$("#oil-reading");if(rd)rd.remove();out.insertAdjacentHTML("afterbegin",'<p class="status err" style="margin-top:14px">'+esc(e.message||e)+'</p>')}
+  ev.target.value="";
+});
+function renderOilStage(){
+  const out=$("#oil-result");if(!S.oilStage.size){out.innerHTML="";return}
+  const used=new Set();Object.values(S.pk).forEach(l=>Object.values(l.services).forEach(sv=>sv.items.forEach(it=>{if(it.t==="OIL")used.add(it.c)})));
+  const missing=[...used].filter(c=>!S.oilStage.has(c));
+  const rows=[...S.oilStage.values()].map(n=>{const o=S.oil.get(n.c);return{...n,old:o?o.sug:null}}).sort((a,b)=>(used.has(b.c)?1:0)-(used.has(a.c)?1:0));
+  out.innerHTML='<div class="status okk" style="margin-top:14px">Listas leídas: '+S.oilLists.map(l=>'<strong>'+esc(l.name)+'</strong>'+(l.vig?' (vigencia '+esc(l.vig)+')':'')+' · '+l.codes.length+' productos').join("; ")+'. Podés sumar otra lista eligiendo otro PDF.'+(missing.length?' Todavía no aparecen: '+missing.map(esc).join(", ")+' (se mantiene su precio anterior).':'')+'</div>'+
+    '<div class="scroll" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>Código</th><th>Lista</th><th>Envase</th><th class="r">Compra $</th><th class="r">Sugerido $</th><th class="r">Antes $</th><th class="r">Var.</th></tr></thead><tbody>'+rows.map(r=>{const v=r.old?(r.sug-r.old)/r.old:null;return'<tr><td class="num">'+esc(r.c)+(used.has(r.c)?'':' <span class="muted small">no usado</span>')+'</td><td class="small muted">'+esc(r.l)+'</td><td>'+esc(r.env)+'</td><td class="r num">'+fmt(r.compra)+'</td><td class="r num">'+fmt(r.sug)+'</td><td class="r num">'+fmt(r.old)+'</td><td class="r num '+(v>0?'up':v<0?'down':'')+'">'+(v==null?'–':pct(v))+'</td></tr>'}).join("")+'</tbody></table></div>'+
+    '<div class="row" style="margin-top:12px;align-items:flex-end"><label class="fld">Vigencia<input type="text" id="oil-label" value="'+esc(S.oilLists.map(l=>l.vig).filter(Boolean)[0]||"")+'"></label><button class="btn ghost" id="oil-clear">Empezar de nuevo</button><button class="btn pri" id="oil-save">Guardar precios de Petronas</button></div>';
+  $("#oil-clear").onclick=()=>{S.oilStage.clear();S.oilLists=[];renderOilStage()};
+  $("#oil-save").onclick=async()=>{
+    try{const next=new Map(S.oil);
+      S.oilStage.forEach((n,c)=>{const o=next.get(c)||{};next.set(c,{c,d:o.d||"",env:n.env,compra:n.compra,sug:n.sug,l:n.l,s:"ok"})});
+      missing.forEach(c=>{const o=next.get(c);if(o)next.set(c,{...o,s:"stale"})});
+      await S.db.doc("prices/oil").set({items:[...next.values()]});
+      await S.db.doc("app/meta").set({...S.meta,oilFecha:"Vigencia "+$("#oil-label").value,oilArchivo:S.oilLists.map(l=>l.name).join(" + ")});
+      S.oilStage.clear();S.oilLists=[];out.innerHTML='<p class="status okk" style="margin-top:14px">Precios de Petronas guardados.</p>'}
+    catch(e){out.insertAdjacentHTML("beforeend",'<p class="status err">No se pudo guardar: '+esc(e.message||e.code)+'</p>')}};
+}
+
+/* ---------- precios tab tables ---------- */
+function renderPrecios(){
+  $("#nh-meta").textContent="Cargada: "+(S.meta.nhFecha||"ninguna")+(S.meta.nhArchivo?" ("+S.meta.nhArchivo+")":"");
+  $("#oil-meta").textContent="Cargada: "+(S.meta.oilFecha||"ninguna")+(S.meta.oilArchivo?" ("+S.meta.oilArchivo+")":"");
+  const where=c=>{const r=[];Object.values(S.pk).forEach(l=>Object.entries(l.services).forEach(([h,sv])=>{if(sv.items.some(it=>it.c===c&&it.on!==false))r.push(lineName(l.name)+" "+h+"h")}));return r};
+  const rev=[...S.nh.values()].filter(e=>e.s!=="ok"||e.post).concat([...S.oil.values()].filter(o=>o.s==="stale"));
+  const usedOil=new Set();Object.values(S.pk).forEach(l=>Object.values(l.services).forEach(sv=>sv.items.forEach(it=>{if(it.t==="OIL"&&!S.oil.has(it.c))usedOil.add(it.c)})));
+  usedOil.forEach(c=>rev.push({c,d:"Aceite / insumo",s:"missing"}));
+  $("#review").innerHTML=rev.length?'<thead><tr><th>Código</th><th>Descripción</th><th>Estado</th><th class="hide-sm">Paquetes donde está</th></tr></thead><tbody>'+rev.map(e=>{const w=where(e.c);return'<tr><td class="num">'+esc(e.c)+'</td><td>'+esc(e.d)+'</td><td>'+stBadge(e.s,e)+'</td><td class="small muted hide-sm">'+esc(w.slice(0,6).join(", "))+(w.length>6?" y "+(w.length-6)+" más":"")+'</td></tr>'}).join("")+'</tbody>':'<tbody><tr><td>No hay códigos para revisar.</td></tr></tbody>';
+  const oils=[...S.oil.values()].sort((a,b)=>(b.d?1:0)-(a.d?1:0)||a.c.localeCompare(b.c));
+  $("#oiltable").innerHTML='<thead><tr><th>Código</th><th>Descripción</th><th>Envase</th><th>Lista</th><th class="r">Compra $</th><th class="r">Sugerido $</th><th class="r">Sugerido USD</th></tr></thead><tbody>'+oils.map(o=>'<tr><td class="num">'+esc(o.c)+'</td><td>'+esc(o.d||"–")+'</td><td>'+esc(o.env)+'</td><td class="small muted">'+esc(o.l||"")+'</td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="compra" value="'+(o.compra??"")+'" style="width:120px" aria-label="Compra '+esc(o.c)+'"></td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="sug" value="'+(o.sug??"")+'" style="width:120px" aria-label="Sugerido '+esc(o.c)+'"></td><td class="r num">'+fmt((o.sug||0)/(S.params.tc||1),2)+'</td></tr>').join("")+'</tbody>';
+  $("#oiltable").querySelectorAll("input.oc").forEach(x=>x.onchange=()=>{const o=S.oil.get(x.dataset.c);o[x.dataset.k]=parseFloat(x.value)||null;o.s="ok";o.l="Manual";S.oilDirty=true;$("#btn-oil-save").classList.remove("hidden")});
+}
+$("#btn-oil-save").onclick=async()=>{try{await S.db.doc("prices/oil").set({items:[...S.oil.values()]});S.oilDirty=false;$("#btn-oil-save").classList.add("hidden");setStatus("Precios de aceites guardados.","okk");renderAll()}catch(e){setStatus("No se pudo guardar: "+(e.message||e.code),"err")}};
+
+/* ---------- parámetros ---------- */
+function renderParams(){
+  $("#params").innerHTML=PARAM_DEF.map(([k,l,h,st,isPct])=>'<label class="fld">'+esc(l)+'<input type="number" step="'+(isPct?1:st)+'" data-k="'+k+'" data-p="'+(isPct?1:0)+'" value="'+(S.params[k]==null?"":isPct?Math.round(S.params[k]*1000)/10:S.params[k])+'">'+(h?'<span class="h">'+esc(h)+'</span>':'')+'</label>').join("");
+}
+$("#btn-params").onclick=async()=>{
+  const np={...S.params};$("#params").querySelectorAll("input").forEach(x=>{const v=parseFloat(x.value);if(!isNaN(v))np[x.dataset.k]=x.dataset.p==="1"?v/100:v});
+  np.dtoRep=Math.min(np.dtoRep,np.maxRep);np.dtoOil=Math.min(np.dtoOil,np.maxOil);
+  try{await S.db.doc("app/params").set(np);S.params=np;setStatus("Parámetros guardados.","okk");renderAll()}catch(e){setStatus("No se pudo guardar: "+(e.message||e.code),"err")}
+};
+
+/* ---------- CSV ---------- */
+$("#btn-csv").onclick=async()=>{
+  const lines=[["Línea","Servicio (h)","Precio paquete USD s/IVA","Con IVA USD","Con IVA $","Materiales lista USD","MO USD","Dto. repuestos %","Dto. aceites %","Hora MO USD","Costo USD","Margen %","Ítems para revisar"].join(";")];
+  linesSorted().forEach(s=>hoursOf(s).forEach(h=>{const c=calc(s,h);lines.push([lineName(S.pk[s].name),h,fmt(c.red),fmt(c.iva,2),fmt(c.ars),fmt(c.mat,2),fmt(c.mo,2),fmt(c.k.dR*100,1),fmt(c.k.dO*100,1),fmt(c.k.hMO,2),fmt(c.costo,2),fmt(c.margen*100,1),c.alerts].join(";"))}));
+  try{await S.dl.save({filename:"paquetes-servicio-"+new Date().toISOString().slice(0,10)+".csv",data:"\ufeff"+lines.join("\r\n")})}catch(e){if(e&&e.code!=="declined")setStatus("No se pudo descargar: "+(e.message||e.code),"err")}
+};
+
+/* ---------- ciclo completo ---------- */
+$("#m-svc").onclick=()=>{S.mode="svc";renderPaq(true)};
+$("#m-cyc").onclick=()=>{S.mode="cyc";renderPaq(true)};
+function cycOf(s){const L=S.pk[s];if(!L.cycle){const hs=hoursOf(s),def=hs.filter(x=>+x>=300);L.cycle={hrs:def.length?def:hs}}return L.cycle}
+function calcCycle(s){
+  const cyc=cycOf(s),p=S.params,k=knobs(cyc);const hs=hoursOf(s).filter(x=>cyc.hrs.includes(x));
+  let conDto=0,costo=0,lista=0,sueltos=0,rep=0,oil=0,mo=0,hrsT=0,alerts=0;const per=[];
+  hs.forEach(x=>{const c=calc(s,x,cyc),c1=calc(s,x);conDto+=c.conDto;costo+=c.costo;lista+=c.lista;sueltos+=c1.red;rep+=c.rep;oil+=c.oil;mo+=c.mo;hrsT+=c.hrs;alerts+=c.alerts;per.push({h:x,c,suelto:c1.red})});
+  const red=p.redondeo>0?Math.ceil(conDto/p.redondeo-1e-9)*p.redondeo:conDto,gan=red-costo,margen=red?gan/red:0;
+  return{hs,per,k,conDto,red,costo,lista,sueltos,ahorro:sueltos-red,gan,margen,rep,oil,mo,hrsT,alerts,iva:red*(1+p.iva),ars:red*(1+p.iva)*p.tc,custom:k.custom};
+}
+function marginText(c){const p=S.params;return(c.margen<0?'<strong class="up">Pérdida: el precio no cubre el costo.</strong> ':c.margen<p.margenMin?'<strong class="up">Ganás, pero por debajo del margen mínimo de '+pct(p.margenMin)+'.</strong> ':'<strong>Por encima del margen mínimo de '+pct(p.margenMin)+'.</strong> ')}
+function renderCycle(){
+  const s=S.line;if(!s){$("#cycle").innerHTML="";return}
+  const cyc=cycOf(s),c=calcCycle(s),p=S.params,all=hoursOf(s);
+  $("#cycle").innerHTML='<div class="panel"><div class="detail-head"><div><h2>'+esc(lineName(S.pk[s].name))+' · Ciclo completo</h2><div class="muted">Un solo precio cerrado por todos los servicios que elijas. Lista CNH: '+esc(S.meta.nhFecha||"–")+' · Petronas: '+esc(S.meta.oilFecha||"–")+'</div></div><div class="bigprice"><div class="v num" id="cb-v">USD '+fmt(c.red)+'</div><div class="l" id="cb-l">precio del plan + IVA · con IVA USD '+fmt(c.iva)+' · $ '+fmt(c.ars)+'</div></div></div>'+
+  '<h3>Servicios incluidos</h3><div class="cyc-list">'+all.map(x=>{const on=cyc.hrs.includes(x),pr=c.per.find(q=>q.h===x);return'<label class="cyc-item'+(on?' on':'')+'"><input type="checkbox" class="cyc-h" value="'+x+'" '+(on?'checked':'')+'><span><span class="t">Servicio '+x+' h</span> <span class="small muted">· '+fmt(S.pk[s].services[x].mo||0,1)+' h de MO</span><br><span class="small muted">Suelto USD '+fmt(calc(s,x).red)+(pr?' · en el plan USD <span class="num" data-cp="'+x+'">'+fmt(pr.c.conDto)+'</span>':'')+'</span></span></label>'}).join("")+'</div>'+
+  '<div class="sim"><div class="sim-head"><h3>Descuentos del plan</h3><span class="muted small">Se aplican a todos los servicios del plan. Topes: repuestos '+pct(p.maxRep)+' · aceites '+pct(p.maxOil)+' · hora desde USD '+fmt(p.minHora)+'</span></div>'+
+  '<div class="knob"><label for="c-r">Repuestos CNH</label><input type="range" id="c-r" min="0" max="'+p.maxRep+'" step="0.005" value="'+c.k.dR+'"><output id="co-r" class="num">'+pct(c.k.dR)+'</output><span class="muted small" id="cx-r">'+fmt(c.rep,2)+' a lista</span></div>'+
+  '<div class="knob"><label for="c-o">Aceites Petronas</label><input type="range" id="c-o" min="0" max="'+p.maxOil+'" step="0.005" value="'+c.k.dO+'"><output id="co-o" class="num">'+pct(c.k.dO)+'</output><span class="muted small" id="cx-o">'+fmt(c.oil,2)+' a lista</span></div>'+
+  '<div class="knob"><label for="c-h">Hora de mano de obra</label><input type="range" id="c-h" min="'+p.minHora+'" max="'+Math.max(120,p.hora*2)+'" step="1" value="'+c.k.hMO+'"><output id="co-h" class="num">USD '+fmt(c.k.hMO)+'</output><span class="muted small">'+fmt(c.hrsT,1)+' h en total</span></div>'+
+  '<div class="mbar" aria-hidden="true"><div class="fill" id="cm-fill"></div><div class="min" style="left:'+Math.min(p.margenMin*100/0.5,100)+'%"></div></div><div class="small" id="cm-txt" style="margin-bottom:6px"></div>'+
+  '<div class="breakdown"><div class="kv"><div class="k">Servicios sueltos</div><div class="v num" id="cv-su">'+fmt(c.sueltos)+'</div></div><div class="kv"><div class="k">Ahorro del cliente</div><div class="v num" id="cv-ah">'+fmt(c.ahorro)+'</div></div><div class="kv"><div class="k">Costo</div><div class="v num" id="cv-co">'+fmt(c.costo,2)+'</div></div><div class="kv"><div class="k">Ganancia</div><div class="v num" id="cv-ga">'+fmt(c.gan,2)+'</div></div><div class="kv"><div class="k">Margen</div><div class="v num" id="cv-m">'+pct(c.margen)+'</div></div></div>'+
+  (c.alerts?'<p class="status info small">'+c.alerts+' ítems del plan tienen el precio para revisar. Miralos en "Un servicio".</p>':'')+
+  '<div class="row">'+(c.custom?'<button class="btn ghost" id="c-reset">Volver a los valores generales</button>':'<span class="muted small">Usando los valores generales de Parámetros</span>')+'<button class="btn yel" id="q-cyc" style="margin-left:auto"'+(c.hs.length?'':' disabled')+'>Cotizar a un cliente</button></div></div>'+
+  (S.dirty.size?'<div class="savebar"><span>Hay cambios sin guardar en '+[...S.dirty].map(x=>esc(lineName(S.pk[x].name))).join(", ")+'</span><span class="row"><button class="btn ghost" id="c-discard">Descartar</button><button class="btn pri" id="c-save">Guardar cambios</button></span></div>':'')+'</div>';
+  const live=()=>{const c2=calcCycle(s);$("#co-r").textContent=pct(c2.k.dR);$("#co-o").textContent=pct(c2.k.dO);$("#co-h").textContent="USD "+fmt(c2.k.hMO);
+    $("#cb-v").textContent="USD "+fmt(c2.red);$("#cb-l").textContent="precio del plan + IVA · con IVA USD "+fmt(c2.iva)+" · $ "+fmt(c2.ars);
+    $("#cv-su").textContent=fmt(c2.sueltos);$("#cv-ah").textContent=fmt(c2.ahorro);$("#cv-co").textContent=fmt(c2.costo,2);$("#cv-ga").textContent=fmt(c2.gan,2);
+    const vm=$("#cv-m");vm.textContent=pct(c2.margen);vm.classList.toggle("up",c2.margen<p.margenMin);
+    const fl=$("#cm-fill");fl.style.width=Math.max(0,Math.min(c2.margen/0.5,1))*100+"%";fl.classList.toggle("low",c2.margen<p.margenMin);
+    c2.per.forEach(q=>{const el=document.querySelector('[data-cp="'+q.h+'"]');if(el)el.textContent=fmt(q.c.conDto)});
+    $("#cm-txt").innerHTML=marginText(c2)+'<span class="muted">Ganancia del plan USD '+fmt(c2.gan,2)+' sobre '+c2.hs.length+' servicios.</span>';renderMatrix()};
+  [["#c-r","dR"],["#c-o","dO"],["#c-h","hMO"]].forEach(([id,key])=>{const el=$(id);el.oninput=()=>{cyc[key]=parseFloat(el.value);S.dirty.add(s);live()};el.onchange=()=>{renderPaq(true);const n=$(id);if(n)n.focus()}});
+  $("#cycle").querySelectorAll(".cyc-h").forEach(x=>x.onchange=()=>{const v=x.value;cyc.hrs=x.checked?[...new Set([...cyc.hrs,v])]:cyc.hrs.filter(y=>y!==v);S.dirty.add(s);renderPaq(true)});
+  const cr=$("#c-reset");if(cr)cr.onclick=()=>{delete cyc.dR;delete cyc.dO;delete cyc.hMO;S.dirty.add(s);renderPaq(true)};
+  $("#q-cyc").onclick=()=>openQuote("ciclo");
+  const sv=$("#c-save");if(sv)sv.onclick=savePackages;const dc=$("#c-discard");if(dc)dc.onclick=()=>{S.dirty.clear();loadAll().then(()=>setStatus("Cambios descartados.","info"))};
+  live();
+}
+
+/* ---------- cotización a cliente ---------- */
+function buildSnapshot(kind){
+  const s=S.line,L=S.pk[s],p=S.params,now=new Date();
+  const items=x=>L.services[x].items.filter(it=>it.on!==false).map(it=>({c:it.c,d:it.d,q:it.q,t:it.t}));
+  const base={tipo:kind,slug:s,linea:lineName(L.name),tc:p.tc,iva:p.iva,listas:{nh:S.meta.nhFecha||"",oil:S.meta.oilFecha||""},createdAt:now.toISOString(),
+    num:"COT-"+String(now.getFullYear()).slice(2)+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(now.getHours()).padStart(2,"0")+String(now.getMinutes()).padStart(2,"0")+String(now.getSeconds()).padStart(2,"0")};
+  if(kind==="servicio"){const c=calc(s,S.h);return{...base,servicios:[{h:S.h,hrs:c.hrs,items:items(S.h)}],total:c.red,conIva:c.iva,ars:c.ars,dR:c.k.dR,dO:c.k.dO,hMO:c.k.hMO,costo:c.costo,margen:c.margen,lista:c.lista}}
+  const c=calcCycle(s);return{...base,servicios:c.per.map(q=>({h:q.h,hrs:q.c.hrs,items:items(q.h)})),total:c.red,conIva:c.iva,ars:c.ars,sueltos:c.sueltos,ahorro:c.ahorro,dR:c.k.dR,dO:c.k.dO,hMO:c.k.hMO,costo:c.costo,margen:c.margen,lista:c.lista};
+}
+function openQuote(kind){
+  const snap=buildSnapshot(kind);S.pending=snap;const f=$("#qform");f.reset();
+  f.modelo.value=snap.linea;f.vendedor.value=localStorage.getItem("cot-vendedor")||(S.me&&S.me.name)||"";
+  f.pago.value=kind==="ciclo"?"Plan completo: se paga cada servicio al realizarlo":"";
+  $("#dl-clientes").innerHTML=[...new Set(S.quotes.map(q=>q.cliente&&q.cliente.nombre).filter(Boolean))].slice(0,200).map(n=>'<option value="'+esc(n)+'">').join("");
+  $("#dlg-sub").textContent=snap.linea+" · "+(kind==="ciclo"?"Ciclo completo ("+snap.servicios.map(x=>x.h+" h").join(", ")+")":"Servicio "+snap.servicios[0].h+" h")+" · USD "+fmt(snap.total)+" + IVA";
+  $("#dlg-msg").textContent="";$("#dlg-ok").disabled=false;$("#dlg").showModal();f.cliente.focus();
+}
+$("#dlg-cancel").onclick=()=>$("#dlg").close();
+$("#qform").addEventListener("submit",async ev=>{
+  ev.preventDefault();const f=ev.target,snap=S.pending;if(!snap)return;
+  if(!f.cliente.value.trim()||!f.vendedor.value.trim()){$("#dlg-msg").textContent="Completá el cliente y quién cotiza.";return}
+  try{localStorage.setItem("cot-vendedor",f.vendedor.value.trim())}catch(e){}
+  const q={...snap,cliente:{nombre:f.cliente.value.trim(),cuit:f.cuit.value.trim(),localidad:f.localidad.value.trim(),contacto:f.contacto.value.trim(),tel:f.tel.value.trim()},
+    unidad:{modelo:f.modelo.value.trim(),serie:f.serie.value.trim(),horas:f.horas.value?+f.horas.value:null},validez:+f.validez.value||15,pago:f.pago.value.trim(),viaticos:f.viaticos.value.trim(),obs:f.obs.value.trim(),
+    vendedor:f.vendedor.value.trim(),detalle:f.detalle.checked,estado:"Enviada"};
+  $("#dlg-ok").disabled=true;$("#dlg-msg").textContent="Generando PDF…";
+  let saved=true;try{if(S.user){const id=await S.user.id();if(id)q.createdBy=id}await S.db.collection("quotes").doc(q.num).set(q)}catch(e){saved=false}
+  try{await downloadPDF(q);$("#dlg").close();setStatus(saved?"Cotización "+q.num+" registrada y descargada.":"Se descargó el PDF, pero no se pudo registrar en el historial (falta permiso de edición).",saved?"okk":"err")}
+  catch(e){$("#dlg-ok").disabled=false;$("#dlg-msg").textContent=e&&e.code==="declined"?"Descarga cancelada. La cotización quedó registrada en el historial.":"No se pudo generar el PDF: "+(e.message||e.code||e)}
+});
+async function downloadPDF(q){
+  await loadScript(JSPDF_URL);await loadScript(AUTOTABLE_URL);
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"}),W=210,M=15,NAVY=[0,52,124],YEL=[253,185,19],INK=[15,27,45],MUT=[78,93,115];
+  const f2=n=>Number(n).toLocaleString("es-AR",{maximumFractionDigits:0}),f2d=n=>Number(n).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const d=new Date(q.createdAt),fecha=d.toLocaleDateString("es-AR"),vence=new Date(d.getTime()+q.validez*864e5).toLocaleDateString("es-AR");
+  doc.setFillColor(...NAVY);doc.rect(0,0,W,30,"F");doc.setFillColor(...YEL);doc.rect(0,30,W,2,"F");
+  doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(20);doc.text("AGROTERRA S.A.",M,14);
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Concesionario Oficial New Holland · Posventa",M,21);
+  doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text("COTIZACIÓN "+q.num,W-M,13,{align:"right"});
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Fecha "+fecha+" · Válida hasta "+vence,W-M,20,{align:"right"});
+  let y=44;doc.setTextColor(...NAVY);doc.setFont("helvetica","bold");doc.setFontSize(16);
+  doc.text(q.tipo==="ciclo"?"Plan de mantenimiento a precio cerrado":"Servicio de mantenimiento a precio cerrado",M,y);
+  y+=6;doc.setTextColor(...MUT);doc.setFont("helvetica","normal");doc.setFontSize(10.5);
+  doc.text(q.linea+" · "+(q.tipo==="ciclo"?"Servicios de "+q.servicios.map(x=>x.h+" h").join(", "):"Servicio de "+q.servicios[0].h+" h"),M,y);
+  y+=8;const col=(x,title,rows)=>{let yy=y;doc.setTextColor(...NAVY);doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text(title,x,yy);yy+=5;
+    rows.filter(r=>r[1]).forEach(r=>{doc.setFont("helvetica","bold");doc.setTextColor(...MUT);doc.setFontSize(9);doc.text(r[0],x,yy);doc.setFont("helvetica","normal");doc.setTextColor(...INK);doc.setFontSize(10);
+      const t=doc.splitTextToSize(String(r[1]),58);doc.text(t,x+27,yy);yy+=5*t.length});return yy};
+  const y1=col(M,"Cliente",[["Razón social",q.cliente.nombre],["CUIT",q.cliente.cuit],["Localidad",q.cliente.localidad],["Contacto",q.cliente.contacto],["Teléfono",q.cliente.tel]]);
+  const y2=col(110,"Unidad",[["Modelo",q.unidad.modelo],["N° de serie",q.unidad.serie],["Horas",q.unidad.horas!=null?f2(q.unidad.horas)+" h":""]]);
+  y=Math.max(y1,y2)+4;
+  const body=[];q.servicios.forEach(sv=>{body.push([{content:"Servicio "+sv.h+" h",colSpan:3,styles:{fillColor:[230,236,246],textColor:NAVY,fontStyle:"bold"}}]);
+    if(q.detalle)sv.items.forEach(it=>body.push([it.c,it.d+(it.t==="OIL"?" (lubricante Petronas)":""),String(it.q).replace(".",",")]));
+    else body.push(["","Repuestos originales New Holland y lubricantes Petronas según plan de mantenimiento",""]);
+    if(sv.hrs)body.push(["","Mano de obra técnica oficial",String(sv.hrs).replace(".",",")+" h"])});
+  doc.autoTable({startY:y,head:[["Código","Descripción","Cant."]],body,margin:{left:M,right:M},styles:{font:"helvetica",fontSize:9,textColor:INK,cellPadding:1.8},headStyles:{fillColor:NAVY,textColor:[255,255,255]},columnStyles:{0:{cellWidth:30},2:{cellWidth:20,halign:"right"}},theme:"grid"});
+  y=doc.lastAutoTable.finalY+8;if(y>235){doc.addPage();y=20}
+  doc.setFillColor(255,248,224);doc.setDrawColor(...YEL);doc.setLineWidth(.8);const bh=q.tipo==="ciclo"&&q.ahorro>0?42:35;doc.roundedRect(M,y,W-2*M,bh,2,2,"FD");
+  doc.setTextColor(...NAVY);doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(q.tipo==="ciclo"?"Precio final del plan":"Precio final del servicio",M+6,y+9);
+  doc.setFontSize(22);doc.text("USD "+f2(q.total)+" + IVA",M+6,y+19);
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(...INK);
+  doc.text("IVA "+Math.round(q.iva*100)+"%: USD "+f2d(q.total*q.iva)+"   ·   Total con IVA: USD "+f2d(q.conIva),M+6,y+26);
+  doc.setTextColor(...MUT);doc.text("Referencia en pesos al tipo de cambio $ "+f2(q.tc)+": $ "+f2(q.ars)+" con IVA",M+6,y+31);
+  if(q.tipo==="ciclo"&&q.ahorro>0){doc.setTextColor(...INK);doc.setFont("helvetica","bold");doc.text("Haciendo los servicios por separado: USD "+f2(q.sueltos)+" + IVA. Con el plan ahorrás USD "+f2(q.ahorro)+".",M+6,y+37);doc.setFont("helvetica","normal")}
+  y+=bh+9;doc.setTextColor(...NAVY);doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("Condiciones",M,y);y+=6;
+  const cond=["El precio es cerrado: incluye mano de obra, repuestos originales New Holland y lubricantes.","Viáticos: "+(q.viaticos||"se cotizan aparte."),q.pago?"Forma de pago: "+q.pago:null,"Validez de la cotización: "+q.validez+" días (hasta el "+vence+").","Precios expresados en dólares estadounidenses más IVA.",q.obs?"Observaciones: "+q.obs:null].filter(Boolean);
+  doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(...INK);
+  cond.forEach(t=>{const l=doc.splitTextToSize(t,W-2*M-5);if(y+5*l.length>280){doc.addPage();y=20}doc.text("•",M,y);doc.text(l,M+4,y);y+=4.8*l.length+1});
+  const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setDrawColor(...NAVY);doc.setLineWidth(.3);doc.line(M,284,W-M,284);doc.setFontSize(8.5);doc.setTextColor(...MUT);
+    doc.text("Cotizó: "+q.vendedor+" · Agroterra S.A. · Posventa",M,289);doc.text("Página "+i+" de "+pages,W-M,289,{align:"right"})}
+  const blob=doc.output("blob"),name=q.num+" "+q.cliente.nombre.replace(/[^\wÁÉÍÓÚÑáéíóúñ ]+/g,"").slice(0,40).trim()+".pdf";
+  if(S.dl)return S.dl.save({filename:name,data:blob});
+  throw new Error("Las descargas no están habilitadas en esta vista.");
+}
+
+/* ---------- historial ---------- */
+function renderHist(){
+  const t=($("#his-q").value||"").toLowerCase().trim();
+  const rows=S.quotes.filter(q=>!t||[q.num,q.cliente&&q.cliente.nombre,q.cliente&&q.cliente.localidad,q.unidad&&q.unidad.modelo,q.unidad&&q.unidad.serie,q.vendedor].join(" ").toLowerCase().includes(t));
+  const EST=["Enviada","Aceptada","Rechazada","Vencida"];
+  $("#his").innerHTML=rows.length?'<thead><tr><th>Fecha</th><th>N°</th><th>Cliente</th><th class="hide-sm">Localidad</th><th>Unidad</th><th>Cotización</th><th class="r">USD + IVA</th><th class="r hide-sm">Margen</th><th class="hide-sm">Cotizó</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(q=>'<tr><td>'+new Date(q.createdAt).toLocaleDateString("es-AR")+'</td><td class="num small">'+esc(q.num)+'</td><td>'+esc(q.cliente&&q.cliente.nombre)+'</td><td class="hide-sm">'+esc(q.cliente&&q.cliente.localidad)+'</td><td>'+esc(q.unidad&&q.unidad.modelo)+(q.unidad&&q.unidad.serie?' <span class="muted small">'+esc(q.unidad.serie)+'</span>':'')+'</td><td>'+(q.tipo==="ciclo"?'Ciclo ('+q.servicios.map(x=>x.h).join("/")+' h)':'Servicio '+esc(q.servicios[0].h)+' h')+'</td><td class="r num">'+fmt(q.total)+'</td><td class="r num hide-sm">'+pct(q.margen)+'</td><td class="hide-sm">'+esc(q.vendedor)+'</td><td><select class="est" data-n="'+esc(q.num)+'" aria-label="Estado de '+esc(q.num)+'">'+EST.map(e=>'<option'+(e===q.estado?' selected':'')+'>'+e+'</option>').join("")+'</select></td><td><button class="btn ghost pdf" data-n="'+esc(q.num)+'" style="min-height:36px;padding:6px 12px">PDF</button></td></tr>').join("")+'</tbody>':'<tbody><tr><td>'+(S.quotes.length?'No hay cotizaciones que coincidan con la búsqueda.':'Todavía no hay cotizaciones. Se registran al tocar "Cotizar a un cliente" en un paquete.')+'</td></tr></tbody>';
+  $("#his").querySelectorAll("select.est").forEach(x=>x.onchange=async()=>{try{await S.db.collection("quotes").doc(x.dataset.n).update({estado:x.value})}catch(e){setStatus("No se pudo cambiar el estado: "+(e.message||e.code),"err")}});
+  $("#his").querySelectorAll("button.pdf").forEach(b=>b.onclick=async()=>{const q=S.quotes.find(x=>x.num===b.dataset.n);try{await downloadPDF(q)}catch(e){if(!e||e.code!=="declined")setStatus("No se pudo generar el PDF: "+(e.message||e.code||e),"err")}});
+}
+$("#his-q").oninput=renderHist;
+$("#his-csv").onclick=async()=>{
+  const L=[["Fecha","Número","Cliente","CUIT","Localidad","Contacto","Teléfono","Unidad","Serie","Horas","Tipo","Servicios","Total USD s/IVA","Margen %","Dto rep %","Dto aceites %","Hora MO USD","Cotizó","Estado"].join(";")];
+  S.quotes.forEach(q=>L.push([new Date(q.createdAt).toLocaleDateString("es-AR"),q.num,q.cliente.nombre,q.cliente.cuit,q.cliente.localidad,q.cliente.contacto,q.cliente.tel,q.unidad.modelo,q.unidad.serie,q.unidad.horas??"",q.tipo,q.servicios.map(x=>x.h).join("/"),fmt(q.total),fmt(q.margen*100,1),fmt(q.dR*100,1),fmt(q.dO*100,1),fmt(q.hMO,2),q.vendedor,q.estado].map(v=>String(v??"").replace(/;/g,",")).join(";")));
+  try{await S.dl.save({filename:"historial-cotizaciones-"+new Date().toISOString().slice(0,10)+".csv",data:"\ufeff"+L.join("\r\n")})}catch(e){if(e&&e.code!=="declined")setStatus("No se pudo descargar: "+(e.message||e.code),"err")}
+};
+
+function renderAll(){if(!Object.keys(S.pk).length){$("#detail").innerHTML='<div class="panel"><p>Todavía no hay paquetes cargados.</p></div>';renderPrecios();renderParams();return}renderPaq(true);renderPrecios();renderParams()}
+
+/* ---------- load (live) ---------- */
+let rt=null;const rerender=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(/^Cargando/.test($("#status").textContent))setStatus(null);renderAll()},80)};
+function subscribe(){
+  const err=e=>setStatus("No se pudieron leer los datos: "+(e.message||e.code),"err");
+  S.db.doc("app/params").onSnapshot(s=>{S.params=Object.assign({tc:1,hora:60,costoHora:30,dtoRep:0.15,dtoOil:0.12,dtoMO:0.2,maxRep:0.25,maxOil:0.12,minHora:30,dtoCNH:0.35,agua:0,redondeo:10,margenMin:0.2,iva:0.21},s.exists?s.data():{});rerender()},err);
+  S.db.doc("app/meta").onSnapshot(s=>{S.meta=s.exists?s.data():{};rerender()},err);
+  S.db.doc("prices/nh").onSnapshot(s=>{if(S.nhDirty)return;S.nh=new Map(((s.exists&&s.data().items)||[]).map(e=>[e.c,e]));rerender()},err);
+  S.db.doc("prices/oil").onSnapshot(s=>{if(S.oilDirty)return;S.oil=new Map(((s.exists&&s.data().items)||[]).map(e=>[e.c,e]));rerender()},err);
+  S.db.collection("pkgs").onSnapshot(q=>{const fresh={};q.docs.forEach(d=>{fresh[d.id]=d.data()});S.lastPk=fresh;
+    const next={};Object.keys(fresh).forEach(k=>{next[k]=S.dirty.has(k)&&S.pk[k]?S.pk[k]:JSON.parse(JSON.stringify(fresh[k]))});S.pk=next;rerender()},err);
+  S.db.collection("quotes").orderBy("createdAt","desc").limit(1000).onSnapshot(q=>{S.quotes=q.docs.map(d=>d.data());renderHist()},()=>{});
+}
+function loadAll(){S.pk={};Object.keys(S.lastPk).forEach(k=>{S.pk[k]=JSON.parse(JSON.stringify(S.lastPk[k]))});renderAll();return Promise.resolve()}
+/* ---------- conexión con Google Sheets ---------- */
+const API_URL=""; // Opcional: pegá acá la URL de Apps Script (termina en /exec) para no tener que escribirla en cada equipo.
+function makeBackend(url,key){
+  const cache={docs:{},quotes:[]},L=[];let role=null;
+  const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+  const snapDoc=p=>({id:p.split("/").pop(),exists:cache.docs[p]!=null,data:()=>clone(cache.docs[p])});
+  const snapCol=p=>{let docs;if(p==="quotes")docs=[...cache.quotes].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).map(q=>({id:q.num,data:()=>clone(q)}));
+    else docs=Object.keys(cache.docs).filter(k=>k.startsWith(p+"/")).map(k=>({id:k.slice(p.length+1),data:()=>clone(cache.docs[k])}));return{docs,size:docs.length,empty:!docs.length}};
+  const notify=()=>L.forEach(l=>{try{l.fn(l.col?snapCol(l.path):snapDoc(l.path))}catch(e){console.error(e)}});
+  const MSG={clave:"La clave no es correcta.",permiso:"Tu clave es de vendedor: no puede cambiar precios, paquetes ni parámetros."};
+  async function load(){const r=await fetch(url+(url.includes("?")?"&":"?")+"key="+encodeURIComponent(key)+"&t="+Date.now());const j=await r.json();if(!j.ok)throw new Error(MSG[j.error]||j.error);cache.docs=j.docs||{};cache.quotes=j.quotes||[];role=j.role;notify();return j}
+  async function post(body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,key})});const j=await r.json();if(!j.ok){const e=new Error(MSG[j.error]||j.error);e.code=j.error;throw e}return j}
+  const api={
+    doc(path){return{
+      get:async()=>snapDoc(path),
+      set:async data=>{if(path.startsWith("quotes/")){await post({action:"quote",data});cache.quotes=cache.quotes.filter(q=>q.num!==data.num).concat([clone(data)])}else{await post({action:"set",path,data});cache.docs[path]=clone(data)}notify()},
+      update:async data=>{if(path.startsWith("quotes/")){const num=path.split("/")[1];await post({action:"quoteUpdate",num,data});const q=cache.quotes.find(x=>x.num===num);if(q)Object.assign(q,data)}else{const d={...(cache.docs[path]||{}),...data};await post({action:"set",path,data:d});cache.docs[path]=d}notify()},
+      onSnapshot(fn){L.push({path,fn});fn(snapDoc(path));return()=>{}}}},
+    collection(path){const c={path,orderBy:()=>c,limit:()=>c,doc:id=>api.doc(path+"/"+id),get:async()=>snapCol(path),onSnapshot(fn){L.push({path,fn,col:true});fn(snapCol(path));return()=>{}}};return c}
+  };
+  return{api,load,post,get role(){return role},cache};
+}
+const dlShim={save:async({filename,data})=>{const blob=data instanceof Blob?data:new Blob([data],{type:/\.csv$/.test(filename)?"text/csv;charset=utf-8":"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);return{status:"saved"}}};
+function showSetup(msg){
+  setStatus(null);$("#setup").classList.remove("hidden");["v-paq","v-his","v-pre","v-aju"].forEach(id=>$("#"+id).classList.add("hidden"));
+  if(API_URL)$("#setup-url-wrap").classList.add("hidden");else $("#setup-url").value=localStorage.getItem("cot-api")||"";
+  $("#setup-msg").textContent=msg||"";$("#setup-msg").className="small"+(msg?" up":"");
+}
+$("#setup-ok").onclick=()=>{const url=(API_URL||$("#setup-url").value).trim(),key=$("#setup-key").value.trim();if(!url||!key){$("#setup-msg").textContent="Completá la dirección y la clave.";return}
+  try{localStorage.setItem("cot-api",url);localStorage.setItem("cot-key",key)}catch(e){}connect(url,key)};
+$("#setup-key").addEventListener("keydown",e=>{if(e.key==="Enter")$("#setup-ok").click()});
+$("#logout").onclick=()=>{try{localStorage.removeItem("cot-key")}catch(e){}location.reload()};
+let BE=null;
+async function connect(url,key){
+  $("#setup").classList.add("hidden");setStatus("Conectando con la planilla…","info");
+  const be=makeBackend(url,key);
+  try{await be.load()}catch(e){showSetup("No se pudo entrar: "+(e.message||"revisá la dirección del servidor y tu conexión."));return}
+  BE=be;S.db=be.api;S.dl=dlShim;S.user=null;
+  const ed=be.role==="editor";document.body.classList.toggle("ro",!ed);$("#who").textContent=ed?"Editor":"Vendedor";
+  ["t-pre","t-aju"].forEach(id=>$("#"+id).classList.toggle("hidden",!ed));
+  $("#v-paq").classList.remove("hidden");document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x.id==="t-paq"?"true":"false"));
+  subscribe();
+  if(!Object.keys(be.cache.docs).length)setStatus(ed?"La planilla está vacía. Andá a Parámetros > Respaldo > Importar respaldo y elegí el archivo de datos iniciales.":"Todavía no hay datos cargados. Avisale a quien administra el cotizador.","info");
+  setInterval(()=>{if(!S.dirty.size)be.load().catch(()=>{})},120000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!S.dirty.size)be.load().catch(()=>{})});
+}
+$("#bk-exp").onclick=()=>{if(!BE)return;dlShim.save({filename:"respaldo-cotizador-"+new Date().toISOString().slice(0,10)+".json",data:JSON.stringify({version:1,exportado:new Date().toISOString(),docs:BE.cache.docs,quotes:BE.cache.quotes})})};
+$("#bk-imp").onchange=async ev=>{const f=ev.target.files[0];if(!f||!BE)return;const m=$("#bk-msg");
+  try{const j=JSON.parse(await f.text());if(!j.docs)throw new Error("El archivo no es un respaldo del cotizador.");
+    m.textContent="Importando…";const docs=Object.entries(j.docs).map(([path,data])=>({path,data}));
+    for(let i=0;i<docs.length;i+=6)await BE.post({action:"setMany",docs:docs.slice(i,i+6)});
+    const qs=j.quotes||[];for(let i=0;i<qs.length;i+=20)await BE.post({action:"setMany",docs:[],quotes:qs.slice(i,i+20)});
+    await BE.load();m.textContent="Respaldo importado: "+docs.length+" datos y "+qs.length+" cotizaciones.";setStatus(null)}
+  catch(e){m.textContent="No se pudo importar: "+(e.message||e)}ev.target.value=""};
+(function(){const url=API_URL||localStorage.getItem("cot-api"),key=localStorage.getItem("cot-key");if(url&&key)connect(url,key);else showSetup()})();
+})();
+</script>
+</body>
+</html>
