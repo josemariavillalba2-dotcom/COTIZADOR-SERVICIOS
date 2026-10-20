@@ -263,7 +263,7 @@ body.ro .savebar,body.ro #add-btn,body.ro .del,body.ro #k-all{display:none !impo
       <label class="fld">N° de serie<input type="text" name="serie" autocomplete="off"></label>
       <label class="fld">Horas actuales<input type="number" name="horas" min="0" step="1"></label>
       <label class="fld">Validez (días)<input type="number" name="validez" min="1" step="1" value="15"></label>
-      <label class="fld full">Forma de pago<input type="text" name="pago" list="dl-pago" autocomplete="off"></label>
+      <label class="fld full">Forma de pago<select name="pagoSel"><option value="">Sin especificar</option><option>Contado</option><option>Cuenta corriente a 30 días</option><option>E-check a 30 y 60 días</option><option>E-check a 30, 60 y 90 días</option><option>E-check a 30, 60, 90 y 120 días</option><option>Tarjeta agro</option><option>A convenir</option><option>Plan completo: pago por adelantado</option><option>Plan completo: se paga cada servicio al realizarlo</option><option value="__otra">Otra (escribirla)</option></select><input type="text" name="pago" class="hidden" placeholder="Escribí la forma de pago" autocomplete="off" style="margin-top:6px"></label>
       <label class="fld full">Viáticos<input type="text" name="viaticos" value="Se cotizan aparte según la distancia."></label>
       <label class="fld full">Observaciones<textarea name="obs"></textarea></label>
       <label class="fld">Cotizó<input type="text" name="vendedor" required autocomplete="off"></label>
@@ -271,7 +271,6 @@ body.ro .savebar,body.ro #add-btn,body.ro .del,body.ro #k-all{display:none !impo
     </div>
     <div class="dlg-f"><span class="small muted" id="dlg-msg" style="margin-right:auto;align-self:center"></span><button type="button" class="btn ghost" id="dlg-cancel">Cancelar</button><button type="submit" class="btn pri" id="dlg-ok">Registrar y descargar PDF</button></div>
   </form>
-  <datalist id="dl-pago"><option value="Contado"><option value="Cuenta corriente a 30 días"><option value="Cheques a 30, 60 y 90 días"><option value="Tarjeta agro"><option value="A convenir"><option value="Plan completo: pago por adelantado"><option value="Plan completo: se paga cada servicio al realizarlo"></datalist>
   <datalist id="dl-clientes"></datalist>
 </dialog>
 
@@ -634,7 +633,8 @@ function buildSnapshot(kind){
 function openQuote(kind){
   const snap=buildSnapshot(kind);S.pending=snap;const f=$("#qform");f.reset();
   f.modelo.value=snap.linea;f.vendedor.value=localStorage.getItem("cot-vendedor")||(S.me&&S.me.name)||"";
-  f.pago.value=kind==="ciclo"?"Plan completo: se paga cada servicio al realizarlo":"";
+  f.pagoSel.value="E-check a 30, 60, 90 y 120 días";f.pago.value="";f.pago.classList.add("hidden");
+  f.pagoSel.onchange=()=>{const o=f.pagoSel.value==="__otra";f.pago.classList.toggle("hidden",!o);if(o)f.pago.focus()};
   $("#dl-clientes").innerHTML=[...new Set(S.quotes.map(q=>q.cliente&&q.cliente.nombre).filter(Boolean))].slice(0,200).map(n=>'<option value="'+esc(n)+'">').join("");
   $("#dlg-sub").textContent=snap.linea+" · "+(kind==="ciclo"?"Ciclo completo ("+snap.servicios.map(x=>x.h+" h").join(", ")+")":"Servicio "+snap.servicios[0].h+" h")+" · USD "+fmt(snap.total)+" + IVA";
   $("#dlg-msg").textContent="";$("#dlg-ok").disabled=false;$("#dlg").showModal();f.cliente.focus();
@@ -645,7 +645,7 @@ $("#qform").addEventListener("submit",async ev=>{
   if(!f.cliente.value.trim()||!f.vendedor.value.trim()){$("#dlg-msg").textContent="Completá el cliente y quién cotiza.";return}
   try{localStorage.setItem("cot-vendedor",f.vendedor.value.trim())}catch(e){}
   const q={...snap,cliente:{nombre:f.cliente.value.trim(),cuit:f.cuit.value.trim(),localidad:f.localidad.value.trim(),contacto:f.contacto.value.trim(),tel:f.tel.value.trim()},
-    unidad:{modelo:f.modelo.value.trim(),serie:f.serie.value.trim(),horas:f.horas.value?+f.horas.value:null},validez:+f.validez.value||15,pago:f.pago.value.trim(),viaticos:f.viaticos.value.trim(),obs:f.obs.value.trim(),
+    unidad:{modelo:f.modelo.value.trim(),serie:f.serie.value.trim(),horas:f.horas.value?+f.horas.value:null},validez:+f.validez.value||15,pago:f.pagoSel.value==="__otra"?f.pago.value.trim():f.pagoSel.value,viaticos:f.viaticos.value.trim(),obs:f.obs.value.trim(),
     vendedor:f.vendedor.value.trim(),detalle:f.detalle.checked,estado:"Enviada"};
   $("#dlg-ok").disabled=true;$("#dlg-msg").textContent="Generando PDF…";
   let saved=true;try{if(S.user){const id=await S.user.id();if(id)q.createdBy=id}await S.db.collection("quotes").doc(q.num).set(q)}catch(e){saved=false}
