@@ -715,7 +715,7 @@ $("#his-csv").onclick=async()=>{
 function renderAll(){if(!Object.keys(S.pk).length){$("#detail").innerHTML='<div class="panel"><p>Todavía no hay paquetes cargados.</p></div>';renderPrecios();renderParams();return}renderPaq(true);renderPrecios();renderParams()}
 
 /* ---------- load (live) ---------- */
-let rt=null;const rerender=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(/^Cargando/.test($("#status").textContent))setStatus(null);renderAll()},80)};
+let rt=null;const rerender=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(/^(Cargando|Conectando)/.test($("#status").textContent))setStatus(null);renderAll()},80)};
 function subscribe(){
   const err=e=>setStatus("No se pudieron leer los datos: "+(e.message||e.code),"err");
   S.db.doc("app/params").onSnapshot(s=>{S.params=Object.assign({tc:1,hora:60,costoHora:30,dtoRep:0.15,dtoOil:0.12,dtoMO:0.2,maxRep:0.25,maxOil:0.12,minHora:30,dtoCNH:0.35,agua:0,redondeo:10,margenMin:0.2,iva:0.21},s.exists?s.data():{});rerender()},err);
