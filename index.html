@@ -298,7 +298,7 @@ const PARAM_DEF=[
   ["margenMin","Margen mínimo aceptable (%)","Por debajo se marca en rojo.",0.01,true],
   ["iva","IVA (%)","",0.01,true]
 ];
-const S={db:null,dl:null,params:{},meta:{},pk:{},nh:new Map(),oil:new Map(),line:null,h:null,dirty:new Set(),nhDirty:false,oilDirty:false,fullNH:null,draftNH:null,oilStage:new Map(),oilLists:[],lastPk:{},mode:"svc",quotes:[],user:null,me:null,pending:null};
+const S={db:null,dl:null,params:{},meta:{},pk:{},nh:new Map(),oil:new Map(),line:null,h:null,dirty:new Set(),nhDirty:false,oilDirty:false,fullNH:null,draftNH:null,oilStage:new Map(),oilLists:[],cycSel:{},lastPk:{},mode:"svc",quotes:[],user:null,me:null,pending:null};
 const JSPDF_URL="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",AUTOTABLE_URL="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -580,10 +580,12 @@ $("#btn-csv").onclick=async()=>{
 
 /* ---------- ciclo completo ---------- */
 $("#m-svc").onclick=()=>{S.mode="svc";renderPaq(true)};
-$("#m-cyc").onclick=()=>{S.mode="cyc";renderPaq(true)};
-function cycOf(s){const L=S.pk[s];if(!L.cycle){const hs=hoursOf(s),def=hs.filter(x=>+x>=300);L.cycle={hrs:def.length?def:hs}}return L.cycle}
+$("#m-cyc").onclick=()=>{if(S.mode!=="cyc")S.cycSel={};S.mode="cyc";renderPaq(true)};
+function cycOf(s){const L=S.pk[s];if(!L.cycle)L.cycle={};return L.cycle}
+/* Servicios elegidos para esta cotización: arranca vacío, se elige a mano y no se guarda en el paquete */
+function cycHrs(s){return S.cycSel[s]||(S.cycSel[s]=[])}
 function calcCycle(s){
-  const cyc=cycOf(s),p=S.params,k=knobs(cyc);const hs=hoursOf(s).filter(x=>cyc.hrs.includes(x));
+  const cyc=cycOf(s),p=S.params,k=knobs(cyc);const hs=hoursOf(s).filter(x=>cycHrs(s).includes(x));
   let conDto=0,costo=0,lista=0,sueltos=0,rep=0,oil=0,mo=0,hrsT=0,alerts=0;const per=[];
   hs.forEach(x=>{const c=calc(s,x,cyc),c1=calc(s,x);conDto+=c.conDto;costo+=c.costo;lista+=c.lista;sueltos+=c1.red;rep+=c.rep;oil+=c.oil;mo+=c.mo;hrsT+=c.hrs;alerts+=c.alerts;per.push({h:x,c,suelto:c1.red})});
   const red=p.redondeo>0?Math.ceil(conDto/p.redondeo-1e-9)*p.redondeo:conDto,gan=red-costo,margen=red?gan/red:0;
@@ -593,8 +595,8 @@ function marginText(c){const p=S.params;return(c.margen<0?'<strong class="up">P�
 function renderCycle(){
   const s=S.line;if(!s){$("#cycle").innerHTML="";return}
   const cyc=cycOf(s),c=calcCycle(s),p=S.params,all=hoursOf(s);
-  $("#cycle").innerHTML='<div class="panel"><div class="detail-head"><div><h2>'+esc(lineName(S.pk[s].name))+' · Ciclo completo</h2><div class="muted">Un solo precio cerrado por todos los servicios que elijas. Lista CNH: '+esc(S.meta.nhFecha||"–")+' · Petronas: '+esc(S.meta.oilFecha||"–")+'</div></div><div class="bigprice"><div class="v num" id="cb-v">USD '+fmt(c.red)+'</div><div class="l" id="cb-l">precio del plan + IVA · con IVA USD '+fmt(c.iva)+' · $ '+fmt(c.ars)+'</div></div></div>'+
-  '<h3>Servicios incluidos</h3><div class="cyc-list">'+all.map(x=>{const on=cyc.hrs.includes(x),pr=c.per.find(q=>q.h===x);return'<label class="cyc-item'+(on?' on':'')+'"><input type="checkbox" class="cyc-h" value="'+x+'" '+(on?'checked':'')+'><span><span class="t">Servicio '+x+' h</span> <span class="small muted">· '+fmt(S.pk[s].services[x].mo||0,1)+' h de MO</span><br><span class="small muted">Suelto USD '+fmt(calc(s,x).red)+(pr?' · en el plan USD <span class="num" data-cp="'+x+'">'+fmt(pr.c.conDto)+'</span>':'')+'</span></span></label>'}).join("")+'</div>'+
+  $("#cycle").innerHTML='<div class="panel"><div class="detail-head"><div><h2>'+esc(lineName(S.pk[s].name))+' · Ciclo completo</h2><div class="muted">Un solo precio cerrado por todos los servicios que elijas. Lista CNH: '+esc(S.meta.nhFecha||"–")+' · Petronas: '+esc(S.meta.oilFecha||"–")+'</div></div><div class="bigprice"><div class="v num" id="cb-v">'+(c.hs.length?'USD '+fmt(c.red):'–')+'</div><div class="l" id="cb-l">precio del plan + IVA · con IVA USD '+fmt(c.iva)+' · $ '+fmt(c.ars)+'</div></div></div>'+
+  '<div class="row" style="align-items:center"><h3 style="margin-right:auto">Servicios a cotizar</h3><button class="btn ghost" id="cyc-all" style="min-height:36px;padding:6px 12px">Todos</button><button class="btn ghost" id="cyc-none" style="min-height:36px;padding:6px 12px">Ninguno</button></div>'+(c.hs.length?'':'<p class="status info small">Marcá los servicios que querés incluir en la cotización.</p>')+'<div class="cyc-list">'+all.map(x=>{const on=cycHrs(s).includes(x),pr=c.per.find(q=>q.h===x);return'<label class="cyc-item'+(on?' on':'')+'"><input type="checkbox" class="cyc-h" value="'+x+'" '+(on?'checked':'')+'><span><span class="t">Servicio '+x+' h</span> <span class="small muted">· '+fmt(S.pk[s].services[x].mo||0,1)+' h de MO</span><br><span class="small muted">Suelto USD '+fmt(calc(s,x).red)+(pr?' · en el plan USD <span class="num" data-cp="'+x+'">'+fmt(pr.c.conDto)+'</span>':'')+'</span></span></label>'}).join("")+'</div>'+
   '<div class="sim"><div class="sim-head"><h3>Descuentos del plan</h3><span class="muted small">Se aplican a todos los servicios del plan. Topes: repuestos '+pct(p.maxRep)+' · aceites '+pct(p.maxOil)+' · hora desde USD '+fmt(p.minHora)+'</span></div>'+
   '<div class="knob"><label for="c-r">Repuestos CNH</label><input type="range" id="c-r" min="0" max="'+p.maxRep+'" step="0.005" value="'+c.k.dR+'"><output id="co-r" class="num">'+pct(c.k.dR)+'</output><span class="muted small" id="cx-r">'+fmt(c.rep,2)+' a lista</span></div>'+
   '<div class="knob"><label for="c-o">Aceites Petronas</label><input type="range" id="c-o" min="0" max="'+p.maxOil+'" step="0.005" value="'+c.k.dO+'"><output id="co-o" class="num">'+pct(c.k.dO)+'</output><span class="muted small" id="cx-o">'+fmt(c.oil,2)+' a lista</span></div>'+
@@ -605,14 +607,15 @@ function renderCycle(){
   '<div class="row">'+(c.custom?'<button class="btn ghost" id="c-reset">Volver a los valores generales</button>':'<span class="muted small">Usando los valores generales de Parámetros</span>')+'<button class="btn yel" id="q-cyc" style="margin-left:auto"'+(c.hs.length?'':' disabled')+'>Cotizar a un cliente</button></div></div>'+
   (S.dirty.size?'<div class="savebar"><span>Hay cambios sin guardar en '+[...S.dirty].map(x=>esc(lineName(S.pk[x].name))).join(", ")+'</span><span class="row"><button class="btn ghost" id="c-discard">Descartar</button><button class="btn pri" id="c-save">Guardar cambios</button></span></div>':'')+'</div>';
   const live=()=>{const c2=calcCycle(s);$("#co-r").textContent=pct(c2.k.dR);$("#co-o").textContent=pct(c2.k.dO);$("#co-h").textContent="USD "+fmt(c2.k.hMO);
-    $("#cb-v").textContent="USD "+fmt(c2.red);$("#cb-l").textContent="precio del plan + IVA · con IVA USD "+fmt(c2.iva)+" · $ "+fmt(c2.ars);
+    if(!c2.hs.length){$("#cb-v").textContent="–";$("#cb-l").textContent="elegí al menos un servicio"}else{$("#cb-v").textContent="USD "+fmt(c2.red);$("#cb-l").textContent="precio del plan + IVA · con IVA USD "+fmt(c2.iva)+" · $ "+fmt(c2.ars)}
     $("#cv-su").textContent=fmt(c2.sueltos);$("#cv-ah").textContent=fmt(c2.ahorro);$("#cv-co").textContent=fmt(c2.costo,2);$("#cv-ga").textContent=fmt(c2.gan,2);
     const vm=$("#cv-m");vm.textContent=pct(c2.margen);vm.classList.toggle("up",c2.margen<p.margenMin);
     const fl=$("#cm-fill");fl.style.width=Math.max(0,Math.min(c2.margen/0.5,1))*100+"%";fl.classList.toggle("low",c2.margen<p.margenMin);
     c2.per.forEach(q=>{const el=document.querySelector('[data-cp="'+q.h+'"]');if(el)el.textContent=fmt(q.c.conDto)});
     $("#cm-txt").innerHTML=marginText(c2)+'<span class="muted">Ganancia del plan USD '+fmt(c2.gan,2)+' sobre '+c2.hs.length+' servicios.</span>';renderMatrix()};
   [["#c-r","dR"],["#c-o","dO"],["#c-h","hMO"]].forEach(([id,key])=>{const el=$(id);el.oninput=()=>{cyc[key]=parseFloat(el.value);S.dirty.add(s);live()};el.onchange=()=>{renderPaq(true);const n=$(id);if(n)n.focus()}});
-  $("#cycle").querySelectorAll(".cyc-h").forEach(x=>x.onchange=()=>{const v=x.value;cyc.hrs=x.checked?[...new Set([...cyc.hrs,v])]:cyc.hrs.filter(y=>y!==v);S.dirty.add(s);renderPaq(true)});
+  $("#cycle").querySelectorAll(".cyc-h").forEach(x=>x.onchange=()=>{const v=x.value,cur=cycHrs(s);S.cycSel[s]=x.checked?[...new Set([...cur,v])]:cur.filter(y=>y!==v);renderPaq(true)});
+  $("#cyc-all").onclick=()=>{S.cycSel[s]=[...all];renderPaq(true)};$("#cyc-none").onclick=()=>{S.cycSel[s]=[];renderPaq(true)};
   const cr=$("#c-reset");if(cr)cr.onclick=()=>{delete cyc.dR;delete cyc.dO;delete cyc.hMO;S.dirty.add(s);renderPaq(true)};
   $("#q-cyc").onclick=()=>openQuote("ciclo");
   const sv=$("#c-save");if(sv)sv.onclick=savePackages;const dc=$("#c-discard");if(dc)dc.onclick=()=>{S.dirty.clear();loadAll().then(()=>setStatus("Cambios descartados.","info"))};
