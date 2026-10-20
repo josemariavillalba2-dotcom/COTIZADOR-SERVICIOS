@@ -672,7 +672,7 @@ async function downloadPDF(q){
   const body=[];q.servicios.forEach(sv=>{body.push([{content:"Servicio "+sv.h+" h",colSpan:3,styles:{fillColor:[230,236,246],textColor:NAVY,fontStyle:"bold"}}]);
     if(q.detalle)sv.items.forEach(it=>body.push([it.c,it.d+(it.t==="OIL"?" (lubricante Petronas)":""),String(it.q).replace(".",",")]));
     else body.push(["","Repuestos originales New Holland y lubricantes Petronas según plan de mantenimiento",""]);
-    if(sv.hrs)body.push(["","Mano de obra técnica oficial",String(sv.hrs).replace(".",",")+" h"])});
+    if(sv.hrs)body.push(["","Mano de obra técnica oficial","Incluida"])});
   doc.autoTable({startY:y,head:[["Código","Descripción","Cant."]],body,margin:{left:M,right:M},styles:{font:"helvetica",fontSize:9,textColor:INK,cellPadding:1.8},headStyles:{fillColor:NAVY,textColor:[255,255,255]},columnStyles:{0:{cellWidth:30},2:{cellWidth:20,halign:"right"}},theme:"grid"});
   y=doc.lastAutoTable.finalY+8;if(y>235){doc.addPage();y=20}
   doc.setFillColor(255,248,224);doc.setDrawColor(...YEL);doc.setLineWidth(.8);const bh=q.tipo==="ciclo"&&q.ahorro>0?42:35;doc.roundedRect(M,y,W-2*M,bh,2,2,"FD");
