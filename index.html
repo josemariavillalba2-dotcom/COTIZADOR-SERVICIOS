@@ -316,10 +316,12 @@ document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("clic
 }));
 
 /* ---------- pricing ---------- */
+/* Unidades por envase: lo cargado a mano, o lo que dice el envase ("24x1L" = 24), o 1 */
+function uxe(o){if(o&&o.u>0)return o.u;const m=String(o&&o.env||"").match(/^(\d+)\s*x/i);return m&&+m[1]>0?+m[1]:1}
 function itemPrice(it){
   const p=S.params,tc=p.tc||1;
   if(it.t==="NH"){const e=S.nh.get(it.c);if(!e||e.p==null)return{u:null,c:null,st:"missing"};return{u:e.p,c:e.p*(1-p.dtoCNH),st:e.s||"ok",e}}
-  if(it.t==="OIL"){const o=S.oil.get(it.c);if(!o||!o.sug)return{u:null,c:null,st:"missing"};const c=o.compra?o.compra/tc:(o.sug/tc)*0.8;return{u:o.sug/tc,c,st:o.s||"ok",e:o}}
+  if(it.t==="OIL"){const o=S.oil.get(it.c);if(!o||!o.sug)return{u:null,c:null,st:"missing"};const n=uxe(o);const c=(o.compra?o.compra/tc:(o.sug/tc)*0.8)/n;return{u:o.sug/tc/n,c,st:o.s||"ok",e:o}}
   if(it.t==="AGUA")return{u:p.agua,c:p.agua*(1-p.dtoCNH),st:"ok"};
   if(it.t==="MAN")return{u:it.p,c:it.p*(1-p.dtoCNH),st:"manual"};
   return{u:null,c:null,st:"missing"};
@@ -536,7 +538,7 @@ function renderOilStage(){
   $("#oil-clear").onclick=()=>{S.oilStage.clear();S.oilLists=[];renderOilStage()};
   $("#oil-save").onclick=async()=>{
     try{const next=new Map(S.oil);
-      S.oilStage.forEach((n,c)=>{const o=next.get(c)||{};next.set(c,{c,d:o.d||"",env:n.env,compra:n.compra,sug:n.sug,l:n.l,s:"ok"})});
+      S.oilStage.forEach((n,c)=>{const o=next.get(c)||{};next.set(c,{c,d:o.d||"",env:n.env,compra:n.compra,sug:n.sug,l:n.l,s:"ok",...(o.u>0?{u:o.u}:{})})});
       missing.forEach(c=>{const o=next.get(c);if(o)next.set(c,{...o,s:"stale"})});
       await S.db.doc("prices/oil").set({items:[...next.values()]});
       await S.db.doc("app/meta").set({...S.meta,oilFecha:"Vigencia "+$("#oil-label").value,oilArchivo:S.oilLists.map(l=>l.name).join(" + ")});
@@ -554,8 +556,8 @@ function renderPrecios(){
   usedOil.forEach(c=>rev.push({c,d:"Aceite / insumo",s:"missing"}));
   $("#review").innerHTML=rev.length?'<thead><tr><th>Código</th><th>Descripción</th><th>Estado</th><th class="hide-sm">Paquetes donde está</th></tr></thead><tbody>'+rev.map(e=>{const w=where(e.c);return'<tr><td class="num">'+esc(e.c)+'</td><td>'+esc(e.d)+'</td><td>'+stBadge(e.s,e)+'</td><td class="small muted hide-sm">'+esc(w.slice(0,6).join(", "))+(w.length>6?" y "+(w.length-6)+" más":"")+'</td></tr>'}).join("")+'</tbody>':'<tbody><tr><td>No hay códigos para revisar.</td></tr></tbody>';
   const oils=[...S.oil.values()].sort((a,b)=>(b.d?1:0)-(a.d?1:0)||a.c.localeCompare(b.c));
-  $("#oiltable").innerHTML='<thead><tr><th>Código</th><th>Descripción</th><th>Envase</th><th>Lista</th><th class="r">Compra $</th><th class="r">Sugerido $</th><th class="r">Sugerido USD</th></tr></thead><tbody>'+oils.map(o=>'<tr><td class="num">'+esc(o.c)+'</td><td>'+esc(o.d||"–")+'</td><td>'+esc(o.env)+'</td><td class="small muted">'+esc(o.l||"")+'</td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="compra" value="'+(o.compra??"")+'" style="width:120px" aria-label="Compra '+esc(o.c)+'"></td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="sug" value="'+(o.sug??"")+'" style="width:120px" aria-label="Sugerido '+esc(o.c)+'"></td><td class="r num">'+fmt((o.sug||0)/(S.params.tc||1),2)+'</td></tr>').join("")+'</tbody>';
-  $("#oiltable").querySelectorAll("input.oc").forEach(x=>x.onchange=()=>{const o=S.oil.get(x.dataset.c);o[x.dataset.k]=parseFloat(x.value)||null;o.s="ok";o.l="Manual";S.oilDirty=true;$("#btn-oil-save").classList.remove("hidden")});
+  $("#oiltable").innerHTML='<thead><tr><th>Código</th><th>Descripción</th><th>Envase</th><th>Lista</th><th class="r">Compra $</th><th class="r">Sugerido $</th><th class="r">Unid. x envase</th><th class="r">Sugerido USD x unidad</th></tr></thead><tbody>'+oils.map(o=>'<tr><td class="num">'+esc(o.c)+'</td><td>'+esc(o.d||"–")+'</td><td>'+esc(o.env)+'</td><td class="small muted">'+esc(o.l||"")+'</td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="compra" value="'+(o.compra??"")+'" style="width:120px" aria-label="Compra '+esc(o.c)+'"></td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="sug" value="'+(o.sug??"")+'" style="width:120px" aria-label="Sugerido '+esc(o.c)+'"></td><td class="r"><input type="number" class="q oc" data-c="'+esc(o.c)+'" data-k="u" min="1" step="1" value="'+uxe(o)+'" style="width:80px" aria-label="Unidades por envase '+esc(o.c)+'"></td><td class="r num">'+fmt((o.sug||0)/(S.params.tc||1)/uxe(o),2)+'</td></tr>').join("")+'</tbody>';
+  $("#oiltable").querySelectorAll("input.oc").forEach(x=>x.onchange=()=>{const o=S.oil.get(x.dataset.c);o[x.dataset.k]=parseFloat(x.value)||null;if(x.dataset.k!=="u"){o.s="ok";o.l="Manual"}S.oilDirty=true;$("#btn-oil-save").classList.remove("hidden")});
 }
 $("#btn-oil-save").onclick=async()=>{try{await S.db.doc("prices/oil").set({items:[...S.oil.values()]});S.oilDirty=false;$("#btn-oil-save").classList.add("hidden");setStatus("Precios de aceites guardados.","okk");renderAll()}catch(e){setStatus("No se pudo guardar: "+(e.message||e.code),"err")}};
 
