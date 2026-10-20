@@ -263,6 +263,7 @@ body.ro .savebar,body.ro #add-btn,body.ro .del,body.ro #k-all{display:none !impo
       <label class="fld">N° de serie<input type="text" name="serie" autocomplete="off"></label>
       <label class="fld">Horas actuales<input type="number" name="horas" min="0" step="1"></label>
       <label class="fld">Validez (días)<input type="number" name="validez" min="1" step="1" value="15"></label>
+      <label class="fld">Tipo de cambio del día ($ por USD)<input type="number" name="tc" min="1" step="0.01" required><span class="h" id="dlg-ars"></span></label>
       <label class="fld full">Forma de pago<select name="pagoSel"><option value="">Sin especificar</option><option>Contado</option><option>Cuenta corriente a 30 días</option><option>E-check a 30 y 60 días</option><option>E-check a 30, 60 y 90 días</option><option>E-check a 30, 60, 90 y 120 días</option><option>Tarjeta agro</option><option>A convenir</option><option>Plan completo: pago por adelantado</option><option>Plan completo: se paga cada servicio al realizarlo</option><option value="__otra">Otra (escribirla)</option></select><input type="text" name="pago" class="hidden" placeholder="Escribí la forma de pago" autocomplete="off" style="margin-top:6px"></label>
       <label class="fld full">Viáticos<input type="text" name="viaticos" value="Se cotizan aparte según la distancia."></label>
       <label class="fld full">Observaciones<textarea name="obs"></textarea></label>
@@ -637,16 +638,18 @@ function openQuote(kind){
   f.pagoSel.onchange=()=>{const o=f.pagoSel.value==="__otra";f.pago.classList.toggle("hidden",!o);if(o)f.pago.focus()};
   $("#dl-clientes").innerHTML=[...new Set(S.quotes.map(q=>q.cliente&&q.cliente.nombre).filter(Boolean))].slice(0,200).map(n=>'<option value="'+esc(n)+'">').join("");
   $("#dlg-sub").textContent=snap.linea+" · "+(kind==="ciclo"?"Ciclo completo ("+snap.servicios.map(x=>x.h+" h").join(", ")+")":"Servicio "+snap.servicios[0].h+" h")+" · USD "+fmt(snap.total)+" + IVA";
+  f.tc.value=snap.tc||"";const ars=()=>{const t=+f.tc.value;$("#dlg-ars").textContent=t>0?"Total con IVA: $ "+fmt(snap.conIva*t):""};f.tc.oninput=ars;ars();
   $("#dlg-msg").textContent="";$("#dlg-ok").disabled=false;$("#dlg").showModal();f.cliente.focus();
 }
 $("#dlg-cancel").onclick=()=>$("#dlg").close();
 $("#qform").addEventListener("submit",async ev=>{
   ev.preventDefault();const f=ev.target,snap=S.pending;if(!snap)return;
   if(!f.cliente.value.trim()||!f.vendedor.value.trim()){$("#dlg-msg").textContent="Completá el cliente y quién cotiza.";return}
+  const tcQ=+f.tc.value;if(!(tcQ>0)){$("#dlg-msg").textContent="Cargá el tipo de cambio del día.";f.tc.focus();return}
   try{localStorage.setItem("cot-vendedor",f.vendedor.value.trim())}catch(e){}
   const q={...snap,cliente:{nombre:f.cliente.value.trim(),cuit:f.cuit.value.trim(),localidad:f.localidad.value.trim(),contacto:f.contacto.value.trim(),tel:f.tel.value.trim()},
     unidad:{modelo:f.modelo.value.trim(),serie:f.serie.value.trim(),horas:f.horas.value?+f.horas.value:null},validez:+f.validez.value||15,pago:f.pagoSel.value==="__otra"?f.pago.value.trim():f.pagoSel.value,viaticos:f.viaticos.value.trim(),obs:f.obs.value.trim(),
-    vendedor:f.vendedor.value.trim(),detalle:f.detalle.checked,estado:"Enviada"};
+    vendedor:f.vendedor.value.trim(),detalle:f.detalle.checked,estado:"Enviada",tc:tcQ,ars:snap.conIva*tcQ};
   $("#dlg-ok").disabled=true;$("#dlg-msg").textContent="Generando PDF…";
   let saved=true;try{if(S.user){const id=await S.user.id();if(id)q.createdBy=id}await S.db.collection("quotes").doc(q.num).set(q)}catch(e){saved=false}
   try{await downloadPDF(q);$("#dlg").close();setStatus(saved?"Cotización "+q.num+" registrada y descargada.":"Se descargó el PDF, pero no se pudo registrar en el historial (falta permiso de edición).",saved?"okk":"err")}
